@@ -1,0 +1,36 @@
+
+約定
+=========================================================================
+
+1. 將本知識庫用作參考者，請給予「來源鏈結」：
+     [GitHub BwayCer/assistant.gas](https://github.com/BwayCer/assistant.gas)
+
+2. 其餘方式運用本知識庫者，請給予「來源鏈結、授權鏈結、名稱、版本、簡述」：
+     [GitHub BwayCer/assistant.gas](https://github.com/BwayCer/assistant.gas)
+     [CC-BY-4.0](https://github.com/BwayCer/assistant.gas/blob/master/LicenseAbout.txt)
+     谷歌應用程式腳本助理 v1.0.0 - 處理專屬於谷歌應用程式腳本的特定程式，或者常用的功能。
+
+__其餘事項依授權規範__
+
+
+關於
+=========================================================================
+
+* 名　稱： 谷歌應用程式腳本助理
+* 授　權： CC-BY-4.0
+* 版　本： v1.0.0
+* 簡　述： 處理專屬於谷歌應用程式腳本的特定程式，或者常用的功能。
+* 擁有者： 張本微 (https://bwaycer.github.io/)
+* 貢獻者： 無
+* 備　註： 無
+
+
+依賴
+=========================================================================
+
+初始化谷歌應用程式腳本 [v1.0.0] [CC-BY-4.0]
+  * 來　源： [GitHub BwayCer/init.gas](https://github.com/BwayCer/init.gas)
+             [CC-BY-4.0](https://github.com/BwayCer/init.gas/blob/master/LicenseAbout.txt)
+  * 擁有者： 張本微 (https://bwaycer.github.io/)
+  * 簡　述： 以類似異步模組定義 AMD 的方式解決依文件名稱排序的載入順序問題。
+
