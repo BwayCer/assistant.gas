@@ -1,0 +1,12 @@
+{
+  "timeZone": "Asia/Taipei",
+  "dependencies": {
+    "libraries": [{
+      "userSymbol": "assistant",
+      "libraryId": "1NAnqmhjNrjju-GmsL281HNom5KpUoNJGJ6pthGRsoh_ANtXNeYLKM250",
+      "version": "1",
+      "developmentMode": true
+    }]
+  },
+  "exceptionLogging": "STACKDRIVER"
+}
