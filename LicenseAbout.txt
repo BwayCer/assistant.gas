@@ -8,7 +8,7 @@
 2. 其餘方式運用本知識庫者，請給予「來源鏈結、授權鏈結、名稱、版本、簡述」：
      [GitHub BwayCer/assistant.gas](https://github.com/BwayCer/assistant.gas)
      [CC-BY-4.0](https://github.com/BwayCer/assistant.gas/blob/master/LicenseAbout.txt)
-     谷歌應用程式腳本助理 v1.0.0 - 處理專屬於谷歌應用程式腳本的特定程式，或者常用的功能。
+     谷歌應用程式腳本助理 v2.0.0 - 處理專屬於谷歌應用程式腳本的特定程式，或者常用的功能。
 
 __其餘事項依授權規範__
 
@@ -18,7 +18,7 @@ __其餘事項依授權規範__
 
 * 名　稱： 谷歌應用程式腳本助理
 * 授　權： CC-BY-4.0
-* 版　本： v1.0.0
+* 版　本： v2.0.0
 * 簡　述： 處理專屬於谷歌應用程式腳本的特定程式，或者常用的功能。
 * 擁有者： 張本微 (https://bwaycer.github.io/)
 * 貢獻者： 無
