@@ -72,6 +72,14 @@ var gasOrder = function () {
                 + ' Received `' + (typeof envState) + '` type.'
             );
 
+        var envStateInfo = this._envStateInfo;
+
+        if (!envStateInfo.hasOwnProperty(envState))
+            throw TypeError(
+                'The "envState" argument must be of "PRODUCTION|DEVELOPMENT|TEST".'
+                + ' Received "' + envState + '" value.'
+            );
+
         if (dependencyList == null || dependencyList.constructor !== Array)
             throw TypeError(
                 'The "dependencyList" argument must be of `Array`.'
@@ -114,15 +122,12 @@ var gasOrder = function () {
             arguContainer = container;
         }
 
-        var deps, cacheNotify, envStateInfo;
+        var deps, cacheNotify;
 
-        envStateInfo = this._envStateInfo;
         deps = arguContainer || {};
         deps.timestamp_origin = timestamp_origin;
         deps.envStateInfo = envStateInfo;
-        deps.env = envStateInfo[
-            envStateInfo.hasOwnProperty(envState) ? envState : 'DEVELOPMENT'
-        ];
+        deps.env = envStateInfo[envState];
 
         cacheNotify = this._cacheNotify = arguNotify || {};
         cacheNotify._depsList = dependencyList;
