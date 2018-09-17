@@ -8,12 +8,12 @@ gasOrder('assistant/juruo', function (deps) {
      * 蒟蒻。
      *
      * @class Juruo
-     * @param {Object} spreadsheetName - 試算表名稱（依設定文件）。
+     * @param {Object} defaultLangPkg - 預設語言包。
      */
     function Juruo(defaultLangPkg) {
-        this.langPkg_local = new _emptyEnum();
-        this.langPkg_default = new _emptyEnum();
-        this.langPkg_program = new _emptyEnum();
+        this._langPkg_local = new _emptyEnum();
+        this._langPkg_default = new _emptyEnum();
+        this._langPkg_program = new _emptyEnum();
 
         if (defaultLangPkg)
             this.pkg('default', defaultLangPkg);
@@ -24,22 +24,24 @@ gasOrder('assistant/juruo', function (deps) {
      *
      * @memberof Juruo~
      * @func _assignPkg
-     * @param {Object} target - 語言包目標物件。
-     * @param {Object} pkg - 語言包來源物件。
+     * @param {Object} target - 目標物件。
+     * @param {Object} langPkg - 語言包。
      * @throws {TypeError} Translation Text must be a `String` type.
      */
-    function _assignPkg(objTarget, objPkg) {
+    function _assignPkg(target, langPkg) {
         var idx, name, val;
         var loop = 2;
-        var ownKey = Object.getOwnPropertyNames(objPkg);
+        var ownKey = Object.getOwnPropertyNames(langPkg);
         var len = ownKey.length;
 
+        // 第一次迴圈檢查
+        // 第二次迴圈設置
         for ( ; loop-- ; ) {
             for (idx = 0; idx < len ; idx++) {
                 name = ownKey[idx];
-                val = objPkg[name];
+                val = langPkg[name];
                 if (loop === 0) {
-                    objTarget[name] = val;
+                    target[name] = val;
                 } else if (typeof val !== 'string') {
                     throw TypeError('Translation Text must be a `String` type.');
                 }
@@ -52,33 +54,33 @@ gasOrder('assistant/juruo', function (deps) {
      *
      * @memberof Juruo#
      * @func pkg
-     * @param {(String|Object)} msgOption - 訊息選項，可為名稱或清單。
-     * @param {String} msg - 訊息內容。
+     * @param {String} langPkgType - 語言包類型。
+     * @param {Object} langPkg - 語言包。
      * @throws {Error} Unspecified language package.
-     * @throws {TypeError} "pkg" argument must be a `Object` type.
+     * @throws {TypeError} "langPkg" argument must be a `Object` type.
      * @throws {TypeError} 見 {@link Juruo~_assignPkg|Juruo~_assignPkg}
      */
-    Juruo.prototype.pkg = function (strType, objPkg) {
+    Juruo.prototype.pkg = function (langPkgType, langPkg) {
         var target;
 
-        switch (strType) {
+        switch (langPkgType) {
             case 'default':
-                target = this.langPkg_default;
+                target = this._langPkg_default;
                 break;
             case 'local':
-                target = this.langPkg_local;
+                target = this._langPkg_local;
                 break;
             default:
                 throw Error('Unspecified language package.');
         }
 
-        if (objPkg || objPkg.constructor !== Object)
+        if (langPkg || langPkg.constructor !== Object)
             throw TypeError(
-                'The "pkg" must be of `Object`.'
-                + ' Received `' + typeof objPkg + '` type.'
+                'The "langPkg" must be of `Object`.'
+                + ' Received `' + typeof langPkg + '` type.'
             );
 
-        _assignPkg(target, objPkg);
+        _assignPkg(target, langPkg);
     };
 
     /**
@@ -90,21 +92,21 @@ gasOrder('assistant/juruo', function (deps) {
      * @param {String} [txt] - 翻譯文本值。
      * @throws {TypeError} The argument is not of the expected.
      */
-    Juruo.prototype.set = function (anyKey, strTxt) {
-        var typeOfMsgOption = anyKey ? anyKey.constructor : null;
+    Juruo.prototype.set = function (key, txt) {
+        var typeOfMsgOption = key ? key.constructor : null;
 
         if (typeOfMsgOption !== Object
-            && !(typeOfMsgOption === String && typeof strTxt === 'string'))
+            && !(typeOfMsgOption === String && typeof txt === 'string'))
             throw TypeError('The "argument" is not of the expected.');
 
-        var target = this.langPkg_program;
+        var target = this._langPkg_program;
 
-        switch ( typeOfMsgOption ) {
+        switch (typeOfMsgOption) {
             case String:
-                target[anyKey] = strTxt;
+                target[key] = txt;
                 break;
             case Object:
-                _assignPkg(target, anyKey);
+                _assignPkg(target, key);
                 break;
         }
     };
@@ -120,14 +122,14 @@ gasOrder('assistant/juruo', function (deps) {
      * @param {Object} replaceMsgInfo - 替代訊息資訊。
      * @return {String}
      */
-    function _strins(strTxt, objReplaceMsgInfo) {
-        if (!_regexSpecifySymbol.test(strTxt)) return strTxt;
+    function _strins(txt, replaceMsgInfo) {
+        if (!_regexSpecifySymbol.test(txt)) return txt;
 
-        return strTxt.replace(_regexSpecifySymbol, function (strMatch, strKey) {
-            if (objReplaceMsgInfo.hasOwnProperty(strKey))
-                return objReplaceMsgInfo[strKey];
+        return txt.replace(_regexSpecifySymbol, function (matchTxt, key) {
+            if (replaceMsgInfo.hasOwnProperty(key))
+                return replaceMsgInfo[key];
             else
-                return strMatch;
+                return matchTxt;
         });
     }
 
@@ -142,23 +144,23 @@ gasOrder('assistant/juruo', function (deps) {
      * @param {Object} [replaceMsgInfo] - 替代訊息資訊。
      * @return {String} 翻譯文本或 `_undefined` 文本的內容。
      */
-    Juruo.prototype.get = function (strKey, objReplaceMsgInfo) {
+    Juruo.prototype.get = function (key, replaceMsgInfo) {
         var idx;
         var target, langTxt;
-        var pkgList = ['langPkg_local', 'langPkg_default', 'langPkg_program'];
+        var pkgList = ['_langPkg_local', '_langPkg_default', '_langPkg_program'];
 
         for (idx = 0; idx < 3 ; idx++) {
             target = this[pkgList[idx]];
-            if (strKey in target) {
-                langTxt = target[strKey];
+            if (key in target) {
+                langTxt = target[key];
                 break;
             }
         }
 
         if (!langTxt)
-            return this.langPkg_default.__undefined;
-        else if (objReplaceMsgInfo instanceof Object)
-            return _strins(langTxt, objReplaceMsgInfo);
+            return this._langPkg_program.__undefined;
+        else if (replaceMsgInfo instanceof Object)
+            return _strins(langTxt, replaceMsgInfo);
         else
             return langTxt;
     };
