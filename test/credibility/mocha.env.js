@@ -29,15 +29,41 @@ global.requireEval = function () {
     }
 
     function _mochaGasEval(_code) {
-        var Reflect = undefined;
-        var Object = _mochaGasEval.store.Object({}, Object);
-        Object.assign = undefined;
+        // 環境設置
+        _mochaGasEval.storeList.forEach((keyPath) => {
+            let keyPathList = keyPath.split('.');
+            let lastIdx = keyPathList.length - 1;
+            keyPathList.reduce((target, key, idx) => {
+                if (idx !== lastIdx)
+                    return target[key];
+                else
+                    target[key] = undefined;
+            }, global);
+        });
 
+        // 執行
         eval(_code);
+
+        // 環境還原
+        _mochaGasEval.storeList.forEach((keyPath) => {
+            let keyPathList = keyPath.split('.');
+            let lastIdx = keyPathList.length - 1;
+            keyPathList.reduce((target, key, idx) => {
+                if (idx !== lastIdx)
+                    return target[key];
+                else
+                    target[key] = _mochaGasEval.store[keyPath];
+            }, global);
+        });
     }
-    _mochaGasEval.store = {
-        Object,
-    };
+    _mochaGasEval.storeList = [
+        'Reflect',
+        'Object.assign',
+    ];
+    _mochaGasEval.store = _mochaGasEval.storeList.reduce((store, keyPath) => {
+        store[keyPath] = keyPath.split('.').reduce((target, key) => target[key], global);
+        return store;
+    }, {});
 
     return requireEval;
 }();
