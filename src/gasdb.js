@@ -13,7 +13,7 @@ gasOrder('assistant/Gasdb', function (deps) {
             'Can\'t have two same keys.',
     });
 
-    deps.Gasdb = function (joinTable) {
+    deps.Gasdb = function (dbMethodObject, joinTable) {
         /**
          * 谷歌腳本資料庫： 簡易谷歌試算表的操作工具。
          *
@@ -96,6 +96,8 @@ gasOrder('assistant/Gasdb', function (deps) {
 
         Gasdb._cache = {};
 
+        Gasdb.getNewDbKey = dbMethodObject.getNewDbKey;
+        Gasdb.findRowIndexByDbKey = dbMethodObject.findRowIndexByDbKey;
         Gasdb.join = joinTable;
 
         /**
@@ -343,6 +345,63 @@ gasOrder('assistant/Gasdb', function (deps) {
 
         return Gasdb;
     }(
+        function () {
+            /**
+             * 取得最新的資料庫引索值。
+             * <br><br>
+             * `dbKey` 為自己設定的引索值，預期被放於各橫列的第一直行欄位中。
+             *
+             * @memberof module:assistant.Gasdb.
+             * @func getNewDbKey
+             * @param {Gasdb} dbSheet - 資料庫試算表。
+             * @return {Number}
+             */
+            function getNewDbKey(dbSheet) {
+                var dbKey, prevDbKey;
+                var idxRowLast = dbSheet.RowLast();
+
+                if (idxRowLast === 0) {
+                    // idxRow === 0，errMsg： 座標或面積範圍無效。
+                    // dbSheet.readRange([idxRow, 1]);
+                    dbKey = 1;
+                } else {
+                    prevDbKey = dbSheet.readRange([idxRowLast, 1]);
+                    // Number('') === 0
+                    dbKey = !prevDbKey || isNaN(prevDbKey)
+                        ? dbSheet.RowNew()
+                        : prevDbKey + 1
+                    ;
+                }
+
+                return dbKey;
+            }
+
+            /**
+             * 找尋符合資料庫引索值的橫列引索值。
+             * <br><br>
+             * 谷歌腳本資料庫的表格起始值為 "1"，與 `Array` 的起始值 "0" 不同。
+             *
+             * @memberof module:assistant.Gasdb.
+             * @func findRowIndexByDbKey
+             * @param {Array} table - 表格。
+             * @param {Number} dbKey - 查找的引索值。
+             * @return {Number}
+             */
+            function findRowIndexByDbKey(table, dbKey) {
+                var idx, len;
+
+                for (idx = 0, len = table.length; idx < len ; idx++)
+                    if (table[idx][0] === dbKey)
+                        return idx + 1;
+
+                return -1;
+            }
+
+            return {
+                getNewDbKey: getNewDbKey,
+                findRowIndexByDbKey: findRowIndexByDbKey,
+            };
+        }(),
         function () {
             /**
              * 連接資料表。
