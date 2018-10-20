@@ -1,0 +1,27 @@
+{
+  "name": "assistant.gas",
+  "version": "0.0.0",
+  "description": "處理專屬於谷歌應用程式腳本的特定程式，或者常用的功能。",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "mocha --opts test/credibility/mocha.opts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BwayCer/assistant.gas.git"
+  },
+  "keywords": [
+    "AppsScript"
+  ],
+  "author": "BwayCer",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/BwayCer/assistant.gas/issues"
+  },
+  "homepage": "https://github.com/BwayCer/assistant.gas#readme",
+  "devDependencies": {
+    "mocha": "^5.2.0"
+  }
+}
