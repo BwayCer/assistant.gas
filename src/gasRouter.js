@@ -112,5 +112,5 @@ gasOrder('assistant/gasRouter', function (deps) {
     };
 
     deps.GasRouter = GasRouter;
-} );
+});
 

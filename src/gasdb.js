@@ -611,5 +611,5 @@ gasOrder('assistant/Gasdb', function (deps) {
             return joinTable;
         }()
     );
-} );
+});
 
