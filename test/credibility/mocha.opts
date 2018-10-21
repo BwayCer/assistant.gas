@@ -1,0 +1,10 @@
+# mocha.opts
+
+-u bdd
+--check-leaks
+# 測試環境設置
+--require ./test/credibility/mocha.env.js
+# 指定測試文件
+# spec: specification 規格
+--recursive ./test/credibility/spec/**.test.js
+
