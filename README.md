@@ -38,6 +38,48 @@
 
 
 
+## 打包及推送工具
+
+
+工具： [`bin/claspPush.sh`](./bin/claspPush.sh)
+
+
+### 使用方式
+
+
+1. 創建推送設定文件：
+
+描述欲上傳的文件，
+其路徑是相對於 "推送設定文件" 的目錄路徑。
+
+**"推送設定文件" 預期與 ".clasp.json" 在同一層目錄下。**
+
+```
+echo "
+./src/gasInit.js
+./src/juruo.js
+./src/supportLite.js
+" > ".claspWrap"
+```
+
+2. 推送命令：
+
+
+```
+# 正式： 打包 + 推送
+# 備註： 使用 Google Closure Compiler 執行「僅刪除註釋和空格」的打包方式。
+#        不使用更優化的壓縮方式是考慮到發生錯誤時除錯的困難度。
+./bin/claspPush.sh ./path/to/.claspWrap
+
+# 測試： 推送
+# 備註： 若 .clasp.json、appsscript.json
+#        兩文件不存在時會建立預設的內容。
+#        * .clasp.json 的預設內容指向作者的谷歌雲端硬碟，建議更改。
+./bin/claspPush.sh --test-env ./path/to/.claspWrap
+```
+
+
+
 
 [google_drive]: https://drive.google.com/
 
