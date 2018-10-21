@@ -47,6 +47,7 @@ fnTmp() {
     fi
 
     local filename code
+    local isShowWrapItemText=0
     local claspPushConfigFilename=`realpath "$arguClaspPushConfigFilename"`
     local mainDirname=`dirname "$claspPushConfigFilename"`
     local claspignoreFilename="$mainDirname/.claspignore"
@@ -61,17 +62,21 @@ fnTmp() {
         done
     fi
 
-    if [ $opt_testEnv -eq 0 ]; then
-        echo "打包項目："
-    fi
     while read filename
     do
         [ -z "$filename" ] && continue
+
+        filename="$mainDirname/$filename"
         if [ ! -f "$filename" ]; then
             echo "[$_filename]: 找不到 \"$filename\" 文件 。" >&2
             return 1
         fi
+
         if [ $opt_testEnv -eq 0 ]; then
+            if [ $isShowWrapItemText -eq 0 ]; then
+                isShowWrapItemText=1
+                echo "打包項目："
+            fi
             echo "└─ $filename"
             code+="`cat "$filename"`$_br"
         else
@@ -100,7 +105,12 @@ fnTmp() {
     # clasp 預設推送目錄下全部文件，無法於命令中指定，
     # 但可靠 ".claspignore" 來設定要忽略的文件。
     echo
-    echo "clasp push"
+    if [ "`realpath "$PWD"`" == "$mainDirname" ]; then
+        echo "clasp push"
+    else
+        echo "clasp push (cd \"$mainDirname\")"
+        cd "$mainDirname"
+    fi
     clasp push
 }
 fnTmp_br="
@@ -153,10 +163,10 @@ fnTmp_createTestClaspEnv() {
     local catFile_claspJson=$fnTmp_createEnv_configCatFile_claspJson
     local catFile_appsscriptJson=$fnTmp_createEnv_configCatFile_appsscriptJson
 
-    local dirnameToCreateEnv="$1"
+    local mainDirname="$1"
 
-    local claspJsonFilename="$dirnameToCreateEnv/.clasp.json"
-    local appsscriptJsonFilename="$dirnameToCreateEnv/appsscript.json"
+    local claspJsonFilename="$mainDirname/.clasp.json"
+    local appsscriptJsonFilename="$mainDirname/appsscript.json"
 
     if [ ! -f "$claspJsonFilename" ]; then
         echo "-> 建立 \"$claspJsonFilename\" 文件"
