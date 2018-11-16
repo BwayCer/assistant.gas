@@ -2,6 +2,21 @@
 # 谷歌應用程式腳本打包
 
 
+##shStyle 腳本環境
+
+
+_PWD=$PWD
+_br="
+"
+
+# 文件路徑資訊
+__filename=`realpath "$0"`
+_dirsh=`dirname "$__filename"`
+_binsh=""
+_libsh=""
+_fileName=`basename "$0"`
+
+
 ##shStyle ###
 
 
@@ -10,8 +25,6 @@
 #   <推送設定文件>
 fnTmp() {
     local tmp
-    local _filename="claspPush.sh"
-    local _br=$fnTmp_br
 
     local opt_testEnv=0
 
@@ -27,109 +40,210 @@ fnTmp() {
     done
 
     local ignoreTxt=$fnTmp_configClaspignore
-    local wrapFilename=$fnTmp_claspWrapPush_wrapFilename
+    local wrapFilenNameTmp=$fnTmp_wrapFilenNameTmp
+    local storeDirname=$fnTmp_storeDirname
 
-    local arguClaspPushConfigFilename="$1"
+    local claspPushFilename="$1"
 
     which "clasp" &> /dev/null
     if [ $? -ne 0 ]; then
-        echo "[$_filename]: 找不到 \"clasp\" 命令。" >&2
+        echo "[$_fileName]: 找不到 \"clasp\" 命令。" >&2
         return 1
     fi
 
-    if [ -z "$arguClaspPushConfigFilename" ]; then
-        echo "[$_filename]: 未提供推送清單文件。" >&2
+    if [ -z "$claspPushFilename" ]; then
+        echo "[$_fileName]: 未提供推送清單文件。" >&2
+        return 1
+    elif [ -z `echo "$claspPushFilename" | grep '\.claspPush$'` ]; then
+        echo "[$_fileName]: \"$claspPushFilename\" 文件副檔名須為 \".claspPush\"。" >&2
+        return 1
+    elif [ ! -f "$claspPushFilename" ]; then
+        echo "[$_fileName]: 找不到 \"$claspPushFilename\" 文件。" >&2
         return 1
     fi
-    if [ ! -f "$arguClaspPushConfigFilename" ]; then
-        echo "[$_filename]: 找不到 \"$arguClaspPushConfigFilename\" 文件。" >&2
-        return 1
-    fi
 
-    local filename code
-    local isShowWrapItemText=0
-    local claspPushConfigFilename=`realpath "$arguClaspPushConfigFilename"`
-    local mainDirname=`dirname "$claspPushConfigFilename"`
-    local claspignoreFilename="$mainDirname/.claspignore"
+    local claspJson appsscriptJson pushList
+    local code realPushFile
+    local realFilename
+    local realClaspPushFilename=`realpath "$claspPushFilename"`
+    local claspPushOrigin=`dirname "$realClaspPushFilename"`
+    local assignName=`basename "$claspPushFilename" | sed "s/\.claspPush$//g"`
+    local realWrapFilenNameTmp="$claspPushOrigin/$wrapFilenNameTmp"
+    local realStoreDirname="$claspPushOrigin/$storeDirname"
+    local wrapJsFilename="$storeDirname/$assignName.js"
+    local realWrapJsFilename="$claspPushOrigin/$wrapJsFilename"
 
-    if [ $opt_testEnv -eq 0 ]; then
-        for filename in "$mainDirname/.clasp.json" "$mainDirname/appsscript.json"
-        do
-            if [ ! -f "$filename" ]; then
-                echo "[$_filename]: 找不到 \"$filename\" 文件。" >&2
-                return 1
-            fi
-        done
-    fi
 
-    while read filename
+    fnTmp_parseClaspPush "$claspPushOrigin" "$realClaspPushFilename"
+    tmp=$?; [ $tmp -ne 0 ] && exit $tmp
+
+    claspJson=$fnTmp_parseClaspPush_claspJson
+    appsscriptJson=$fnTmp_parseClaspPush_appsscriptJson
+    pushList=("${fnTmp_parseClaspPush_pushList[@]}")
+
+
+    ignoreTxt+="$_br!$wrapJsFilename"
+
+    echo "打包項目："
+    for realPushFile in "${pushList[@]}"
     do
-        [ -z "$filename" ] && continue
-
-        filename="$mainDirname/$filename"
-        if [ ! -f "$filename" ]; then
-            echo "[$_filename]: 找不到 \"$filename\" 文件 。" >&2
-            return 1
-        fi
-
-        if [ $opt_testEnv -eq 0 ]; then
-            if [ $isShowWrapItemText -eq 0 ]; then
-                isShowWrapItemText=1
-                echo "打包項目："
-            fi
-            echo "└─ $filename"
-            code+="`cat "$filename"`$_br"
-        else
-            ignoreTxt+="$_br!$filename"
-        fi
-    done < "$claspPushConfigFilename"
+        echo "└─ $realPushFile"
+        code+="$_br/* $realPushFile */$_br`cat "$realPushFile"`$_br"
+    done
+    echo "$code" > "$realWrapFilenNameTmp"
+    echo
 
     if [ $opt_testEnv -eq 0 ]; then
-        fnTmp_claspWrapPush_code=$code
-        fnTmp_claspWrapPush "$mainDirname"
+        fnTmp_closureCompiler "$realWrapFilenNameTmp"
         tmp=$?; [ $tmp -ne 0 ] && exit $tmp
-
-        if [ ! -f "$claspignoreFilename" ]; then
-            echo
-            ignoreTxt+="$_br!$wrapFilename"
-            echo "-> 建立 \"$claspignoreFilename\" 文件"
-            echo "$ignoreTxt" > "$claspignoreFilename"
-        fi
-    else
-        fnTmp_createTestClaspEnv "$mainDirname"
-
-        echo "-> 建立 \"$claspignoreFilename\" 文件"
-        echo "$ignoreTxt" > "$claspignoreFilename"
     fi
+
+
+    if [ ! -d "$realStoreDirname" ]; then
+        mkdir -p "$realStoreDirname"
+        tmp=$?; [ $tmp -ne 0 ] && exit $tmp
+    fi
+
+
+    realFilename="$claspPushOrigin/.clasp.json"
+    echo "-> 建立 \"$realFilename\" 文件"
+    echo "$claspJson" > "$realFilename"
+
+    realFilename="$claspPushOrigin/appsscript.json"
+    echo "-> 建立 \"$realFilename\" 文件"
+    echo "$appsscriptJson" > "$realFilename"
+
+    realFilename="$claspPushOrigin/.claspignore"
+    echo "-> 建立 \"$realFilename\" 文件"
+    echo "$ignoreTxt" > "$realFilename"
+
+    echo "-> 建立 \"$realWrapJsFilename\" 文件"
+    mv "$realWrapFilenNameTmp" "$realWrapJsFilename"
 
     # clasp 預設推送目錄下全部文件，無法於命令中指定，
     # 但可靠 ".claspignore" 來設定要忽略的文件。
     echo
-    if [ "`realpath "$PWD"`" == "$mainDirname" ]; then
-        echo "clasp push"
+    if [ "`realpath "$PWD"`" == "$claspPushOrigin" ]; then
+        echo "-> clasp push"
     else
-        echo "clasp push (cd \"$mainDirname\")"
-        cd "$mainDirname"
+        echo "-> clasp push (cd \"$claspPushOrigin\")"
+        cd "$claspPushOrigin"
     fi
+
     clasp push
 }
-fnTmp_br="
-"
 # .claspignore
 fnTmp_configClaspignore='
 **/**
 !appsscript.json
 '
-fnTmp_claspWrapPush() {
-    local wrapFilename=$fnTmp_claspWrapPush_wrapFilename
-    local code=$fnTmp_claspWrapPush_code
+fnTmp_wrapFilenNameTmp=".wrapFile.claspPush.tmp"
+fnTmp_storeDirname="lib"
+fnTmp_parseClaspPush_claspJson=""
+fnTmp_parseClaspPush_appsscriptJson=""
+fnTmp_parseClaspPush_pushList=()
+fnTmp_parseClaspPush() {
+    local claspPushOrigin="$1"
+    local realClaspPushFilename="$2"
 
-    local mainDirname="$1"
+    local idx line pushFile realPushFile
+    local isChangeMethod=0
+    local isRepeatedCall=0
+    local isHasClaspJsonMethod=0
+    local isHasAppsscriptJsonMethod=0
+    local isHasPushListMethod=0
+    local claspJson=""
+    local appsscriptJson=""
+    local pushList=()
+    local claspPushTxt=`grep "." "$realClaspPushFilename"`
+    local len=`echo "$claspPushTxt" | wc -l`
+    local method=""
 
-    local wrapFile="$mainDirname/$wrapFilename"
-    local storeDirname=`dirname "$mainDirname/$wrapFilename"`
+    for idx in `seq 1 $len`
+    do
+        line="`echo "$claspPushTxt" | sed -n "${idx}p"`"
 
-    [ ! -d "$storeDirname" ] && mkdir -p "$storeDirname"
+        case "$line" in
+            "#FILE .clasp.json" )
+                [ $isHasClaspJsonMethod -ne 0 ] && isRepeatedCall=1
+                isChangeMethod=1
+                isHasClaspJsonMethod=1
+                method="claspJson"
+                ;;
+            "#FILE appsscript.json" )
+                [ $isHasAppsscriptJsonMethod -ne 0 ] && isRepeatedCall=1
+                isChangeMethod=1
+                isHasAppsscriptJsonMethod=1
+                method="appsscriptJson"
+                ;;
+            "#PUSHlIST" )
+                [ $isHasPushListMethod -ne 0 ] && isRepeatedCall=1
+                isChangeMethod=1
+                isHasPushListMethod=1
+                method="pushList"
+                ;;
+            * )
+                isChangeMethod=0
+                ;;
+        esac
+
+        if [ $isChangeMethod -eq 1 ]; then
+            if [ $isRepeatedCall -eq 1 ]; then
+                echo "[$_fileName]: 設定文件中重複調用相同的處理方法。" >&2
+                return 1
+            fi
+            continue
+        fi
+
+        if [ -z "$method" ]; then
+            echo "[$_fileName]: 設定文件中的未指明語意的處理方法。" >&2
+            return 1
+        fi
+
+        line=`echo "$line" | sed "s/#.*//g"`
+        [ -z "$line" ] && continue
+        [ -z "`echo "$line" | grep "\S"`" ] && continue
+
+        case "$method" in
+            "claspJson" )
+                claspJson+=$line$_br
+                ;;
+            "appsscriptJson" )
+                appsscriptJson+=$line$_br
+                ;;
+            "pushList" )
+                pushFile=$line
+
+                realPushFile="$claspPushOrigin/$pushFile"
+                if [ ! -f "$realPushFile" ]; then
+                    echo "[$_fileName]: 找不到設定文件中的 \"$realPushFile\" 文件。" >&2
+                    return 1
+                fi
+
+                pushList[${#pushList[@]}]=$realPushFile
+                ;;
+        esac
+    done
+
+    if [ -z "$claspJson" ]; then
+        echo "[$_fileName]: 設定文件中的 \".clasp.json\" 文件設定失敗。" >&2
+        return 1
+    elif [ -z "$appsscriptJson" ]; then
+        echo "[$_fileName]: 設定文件中的 \"appsscript.json\" 文件設定失敗。" >&2
+        return 1
+    elif [ ${#pushList[@]} -eq 0 ]; then
+        echo "[$_fileName]: 設定文件中的推送清單設定失敗。" >&2
+        return 1
+    fi
+
+    fnTmp_parseClaspPush_claspJson="$claspJson"
+    fnTmp_parseClaspPush_appsscriptJson="$appsscriptJson"
+    fnTmp_parseClaspPush_pushList=("${pushList[@]}")
+}
+fnTmp_closureCompiler() {
+    local realWrapFilenNameTmp="$1"
+
+    local code=`cat "$realWrapFilenNameTmp"`
 
     curl -s --url "https://closure-compiler.appspot.com/compile" \
         --request "POST" \
@@ -140,10 +254,10 @@ fnTmp_claspWrapPush() {
         --data-urlencode "formatting=pretty_print" \
         --data-urlencode "output_info=compiled_code" \
         --data-urlencode "output_format=text" \
-        > "$wrapFile"
+        > "$realWrapFilenNameTmp"
 
     # 若回傳空值則要查看錯誤原因
-    if [ -z "`cat $wrapFile`" ]; then
+    if [ -z "`cat "$realWrapFilenNameTmp"`" ]; then
         curl -s --url "https://closure-compiler.appspot.com/compile" \
             --request "POST" \
             --header "cache-control: no-cache" \
@@ -157,34 +271,6 @@ fnTmp_claspWrapPush() {
         return 1
     fi
 }
-fnTmp_claspWrapPush_wrapFilename="lib/aaa.js"
-fnTmp_claspWrapPush_code=""
-fnTmp_createTestClaspEnv() {
-    local catFile_claspJson=$fnTmp_createEnv_configCatFile_claspJson
-    local catFile_appsscriptJson=$fnTmp_createEnv_configCatFile_appsscriptJson
-
-    local mainDirname="$1"
-
-    local claspJsonFilename="$mainDirname/.clasp.json"
-    local appsscriptJsonFilename="$mainDirname/appsscript.json"
-
-    if [ ! -f "$claspJsonFilename" ]; then
-        echo "-> 建立 \"$claspJsonFilename\" 文件"
-        echo "$catFile_claspJson" > "$claspJsonFilename"
-    fi
-    if [ ! -f "$appsscriptJsonFilename" ]; then
-        echo "-> 建立 \"$appsscriptJsonFilename\" 文件"
-        echo "$catFile_appsscriptJson" > "$appsscriptJsonFilename"
-    fi
-}
-# .clasp.json
-fnTmp_createEnv_configCatFile_claspJson='{"scriptId":"1uucIV7V20MaZqY-7G5PwAbowXDiSOtIshWRoVK92qEN3U-MyDk0rijbj"}'
-# appsscript.json
-fnTmp_createEnv_configCatFile_appsscriptJson='{
-  "timeZone": "Asia/Taipei",
-  "dependencies": {},
-  "exceptionLogging": "STACKDRIVER"
-}'
 
 fnTmp "$@"
 
