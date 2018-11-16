@@ -6,7 +6,7 @@ gasOrder.menu(
         'assistant/juruo',
         '_config',
         'assistant/Gasdb',
-        'assistant/getTimeStamping',
+        'assistant/timeStamping',
         'assistant/GasWebRecorder',
         '_config_setWebRecorderSpreadsheet',
     ],
@@ -161,8 +161,8 @@ function test_GasWebRecorder_fetchError() {
     var deps = this;
 
     var webRecorder = new deps.GasWebRecorder('webRecorder');
-    var url = 'https://tool.magiclen.org/ip/';
-    var options = null;
+    var url = 'https://httpstat.us/404';
+    var options = {muteHttpExceptions: true};
     var fhrData = webRecorder.fetch(
         'Fetch Error', url, options,
         'NotShow', 'Text'
