@@ -99,5 +99,5 @@ gasOrder('assistant/timeStamping', function (deps) {
     };
 
     deps.timeStamping = timeStamping;
-} );
+});
 
