@@ -63,20 +63,20 @@ gasOrder('assistant/GasWebRecorder', function (deps) {
     };
 
     function _AddLine(dbSheet, service, actItem) {
-        var timeStamp = deps.getTimeStamping();
+        var timeStamp = new deps.timeStamping();
 
         this._dbSheet = dbSheet;
-        this.timeStamp = timeStamp.time;
+        this.timeStamp = timeStamp.timeMs;
         this.idxRowNew = dbSheet.RowNew();
         this.dbKey = deps.Gasdb.getNewDbKey(dbSheet);
 
         dbSheet.create(dbSheet.fill([
             // 0. 引索
             this.dbKey,
-            // 1. 時間戳
-            timeStamp.timeUTC,
-            // 2. 日期時間
-            timeStamp.readableUTC,
+            // 1. 標準時間戳
+            timeStamp.symbol,
+            // 2. 時間戳
+            timeStamp.timeMsUTC,
             // 3. 服務
             service,
             // 4. 項目
@@ -156,7 +156,7 @@ gasOrder('assistant/GasWebRecorder', function (deps) {
         tryCatchRunInfo = _tryCatchRun(sheetName, run, request);
 
         if (tryCatchRunInfo.ok) {
-            newLine.replyState('成功', '', +(new Date()) - newLine.timeStamp);
+            newLine.replyState('成功', '', +new Date() - newLine.timeStamp);
         } else {
             newLine.replyState('失敗', tryCatchRunInfo.errLink, '');
             throw tryCatchRunInfo.err;
@@ -194,7 +194,7 @@ gasOrder('assistant/GasWebRecorder', function (deps) {
         tryCatchRunInfo = _tryCatchRun(sheetName, run);
 
         if (tryCatchRunInfo.ok) {
-            newLine.replyState('成功', '', +(new Date()) - newLine.timeStamp);
+            newLine.replyState('成功', '', +new Date() - newLine.timeStamp);
         } else {
             newLine.replyState('失敗', tryCatchRunInfo.errLink, '');
             throw tryCatchRunInfo.err;
@@ -227,7 +227,7 @@ gasOrder('assistant/GasWebRecorder', function (deps) {
                 tryCatchRunInfo.returnValue,
                 receiveContentShowMethod
             );
-            newLine.replyState('成功', '', +(new Date()) - newLine.timeStamp);
+            newLine.replyState('成功', '', +new Date() - newLine.timeStamp);
 
             return receiveInfo;
         } else {
