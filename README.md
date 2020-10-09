@@ -2,7 +2,7 @@
 =======
 
 
-> 授權： [CC-BY-4.0](./LICENSE.md)
+> 授權： [CC-BY-4.0](https://choosealicense.com/licenses/cc-by-4.0/)
 
 > 版本： v3.1.0
 
