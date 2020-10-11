@@ -15,6 +15,8 @@ import Gasdb from './Gasdb.js';
  * @param {String} sheetName - 試算表名稱。
  *
  * @example
+ * GasWebRecorder.setSheetConfig('webRecorder', <id>);
+ *
  * let webRecorder = new GasWebRecorder('webRecorder');
  * let doGet  = webRecorder.receiver('Get  項目', function (request) {...});
  * let doPost = webRecorder.receiver('Post 項目', function (request) {...});
@@ -37,9 +39,6 @@ import Gasdb from './Gasdb.js';
  *   },
  *   "contentLength": -1
  * });
- *
- * @example
- * GasWebRecorder.setSheetConfig(spreadsheet, sheetName, id);
  */
 export default function GasWebRecorder(sheetName) {
   this._sheetName = sheetName;
@@ -50,16 +49,19 @@ export default function GasWebRecorder(sheetName) {
  *
  * @memberof module:assistant.gasWebRecorder.
  * @func setSheetConfig
- * @param {Object} spreadsheetConfig - 試算表設定物件。
  * @param {String} sheetName - 試算表名稱。
  * @param {String} id - 試算表識別碼。
  */
-GasWebRecorder.setSheetConfig = function (spreadsheetConfig, sheetName, id) {
-  spreadsheetConfig[sheetName + '_id'] = id;
-  spreadsheetConfig[sheetName + '_table'] = {
-    track: 'Track',
-    error: 'Error',
+GasWebRecorder.setSheetConfig = function (sheetName, id) {
+  let sheetConfigs = {};
+  sheetConfigs[sheetName] = {
+    id: id,
+    tables: {
+      track: 'Track',
+      error: 'Error',
+    },
   };
+  Gasdb.setSheetConfig(sheetConfigs);
 };
 
 function _AddLine(dbSheet, service, actItem) {
