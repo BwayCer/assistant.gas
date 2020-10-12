@@ -74,7 +74,7 @@ function _AddLine(dbSheet, service, actItem) {
     // 0. 引索
     this.dbKey,
     // 1. 標準時間戳
-    timeStamp.toISOString(),
+    now.toISOString(),
     // 2. 時間戳
     this.timeStamp,
     // 3. 服務
@@ -155,10 +155,12 @@ function _runReceiver(sheetName, actItem, request, run) {
   newLine.replyState('接收', '', '');
   tryCatchRunInfo = _tryCatchRun(sheetName, run, request);
 
+  let timeSpend = +(new Date()) - newLine.timeStamp;
   if (tryCatchRunInfo.ok) {
-    newLine.replyState('成功', '', +(new Date()) - newLine.timeStamp);
+    newLine.replyState('成功', '', timeSpend);
+    return tryCatchRunInfo.returnValue;
   } else {
-    newLine.replyState('失敗', tryCatchRunInfo.errLink, '');
+    newLine.replyState('失敗', tryCatchRunInfo.errLink, timeSpend);
     throw tryCatchRunInfo.err;
   }
 }
@@ -193,10 +195,11 @@ function _runTrigger(sheetName, actItem, run) {
   newLine.replyState('運行', '', '');
   tryCatchRunInfo = _tryCatchRun(sheetName, run);
 
+  let timeSpend = +(new Date()) - newLine.timeStamp;
   if (tryCatchRunInfo.ok) {
-    newLine.replyState('成功', '', +(new Date()) - newLine.timeStamp);
+    newLine.replyState('成功', '', timeSpend);
   } else {
-    newLine.replyState('失敗', tryCatchRunInfo.errLink, '');
+    newLine.replyState('失敗', tryCatchRunInfo.errLink, timeSpend);
     throw tryCatchRunInfo.err;
   }
 }
@@ -219,6 +222,7 @@ function _runFetch(
     return UrlFetchApp.fetch(url, options);
   });
 
+  let timeSpend = +(new Date()) - newLine.timeStamp;
   if (tryCatchRunInfo.ok) {
     // 請求耗時
     dbSheet.updateRange([idxRowNew, 9], tryCatchRunInfo.consumeTimeMs);
@@ -227,11 +231,10 @@ function _runFetch(
       tryCatchRunInfo.returnValue,
       receiveContentShowMethod
     );
-    newLine.replyState('成功', '', +(new Date()) - newLine.timeStamp);
-
+    newLine.replyState('成功', '', timeSpend);
     return receiveInfo;
   } else {
-    newLine.replyState('失敗', tryCatchRunInfo.errLink, '');
+    newLine.replyState('失敗', tryCatchRunInfo.errLink, timeSpend);
     throw tryCatchRunInfo.err;
   }
 }
@@ -278,28 +281,27 @@ function _runFetch_recorderRequest(
 
 function _runFetch_recorderReceive(dbSheet, idxRowNew, receive, contentShowMethod) {
   let statusCode, readContentType, readContent;
-  let receive_headers, headers, contentType, contentLength;
+  let receive_headers, headers, contentType;
   let newLine = new Array(6);
-
+  let contentText = receive.getContentText();
+  let contentLength = contentText.length; // == +(receive.getHeaders()['Content-Length'])
   this.info = receive;
   statusCode = this.statusCode = receive.getResponseCode();
 
   receive_headers = receive.getHeaders();
   if (receive_headers) {
-    headers       = receive_headers;
-    contentType   = receive_headers['Content-Type'] || '';
-    contentLength = receive_headers['Content-Length'] || '';
+    headers = receive_headers;
+    contentType = receive_headers['Content-Type'] || '';
   } else {
-    headers = contentType = contentLength = '';
+    headers = contentType = '';
   }
-  this.headers       = headers;
-  this.contentType   = contentType;
-  this.contentLength = +contentLength;
-
+  this.headers = headers;
+  this.contentType = contentType;
+  this.contentLength = contentLength;
   switch (contentShowMethod) {
     case 'Text':
       readContentType = contentShowMethod;
-      readContent = receive.getContentText();
+      readContent = contentText;
       break;
     case 'Blob':
       readContentType = contentShowMethod;
@@ -334,7 +336,7 @@ function _runFetch_recorderReceive(dbSheet, idxRowNew, receive, contentShowMetho
 GasWebRecorder.prototype.receiver = function (actItem, run) {
   let sheetName = this._sheetName;
   return function (request) {
-    _runReceiver(sheetName, actItem, request, run);
+    return _runReceiver(sheetName, actItem, request, run);
   };
 };
 
