@@ -1,8 +1,12 @@
 ---
+bail: true
 check-leaks: true
+color: false
 ui: 'bdd'
 # 測試環境設置
-require: './test/credibility/mocha.env.js'
+require:
+  - '@babel/register'
+  - './test/credibility/mocha.env.js'
 # 指定測試文件
 # spec: specification 規格
 spec:

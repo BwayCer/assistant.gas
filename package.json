@@ -22,6 +22,7 @@
   },
   "homepage": "https://github.com/BwayCer/assistant.gas#readme",
   "devDependencies": {
+    "@babel/register": "^7.12.10",
     "mocha": "^8.2.1"
   }
 }
