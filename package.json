@@ -17,5 +17,11 @@
   "bugs": {
     "url": "https://github.com/BwayCer/assistant.gas/issues"
   },
-  "homepage": "https://github.com/BwayCer/assistant.gas#readme"
+  "homepage": "https://github.com/BwayCer/assistant.gas#readme",
+  "scripts": {
+    "eslint": "eslint --ext .js,.es,.mjs --ignore-path .gitignore ./src"
+  },
+  "devDependencies": {
+    "eslint": "^7.18.0"
+  }
 }
