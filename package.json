@@ -5,9 +5,6 @@
   "directories": {
     "lib": "lib"
   },
-  "scripts": {
-    "test": "mocha --opts test/credibility/mocha.opts"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/BwayCer/assistant.gas.git"
@@ -20,8 +17,5 @@
   "bugs": {
     "url": "https://github.com/BwayCer/assistant.gas/issues"
   },
-  "homepage": "https://github.com/BwayCer/assistant.gas#readme",
-  "devDependencies": {
-    "mocha": "^5.2.0"
-  }
+  "homepage": "https://github.com/BwayCer/assistant.gas#readme"
 }
