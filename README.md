@@ -56,6 +56,15 @@
 
 
 
+### 紀錄已知 V8 版本無法使用的功能
+
+
+```
+import, export
+```
+
+
+
 
 [google_drive]: https://drive.google.com
 [google_script]: https://script.google.com
