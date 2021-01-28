@@ -33,11 +33,13 @@
     "LICENSE"
   ],
   "scripts": {
+    "eslint": "eslint --ext .js,.es,.mjs --ignore-path .gitignore ./src",
     "build": "NODE_ENV=beta htDevGulp build",
     "build:gasTest": "rm -rf dist && NODE_ENV=beta gulp test_gasTest",
     "push:clasp": "cd dist/ && clasp push"
   },
   "devDependencies": {
+    "eslint": "^7.18.0",
     "rollup-plugin-node-polyfills": "^0.2.1"
   }
 }
