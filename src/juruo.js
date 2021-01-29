@@ -178,9 +178,11 @@ export let juruo = new Juruo();
 
 juruo.set({
   __undefined: 'Unexpected log message.',
+  __undefinedError: 'Unexpected error message.',
   __illegalInvocation: 'Illegal invocation.',
   __inconsistentExpectation: 'The usage of "{name}" is inconsistent with expectation.',
   __notExpected: 'The "{name}" is not of the expected.',
+  __notExpectedType: 'The "{name}" is not of the expected type.',
   __typeError: 'A value is not of the expected type.',
   __restrictedType: 'The "{name}" must be of `{type}`. Received `{actual}` type.',
   __restrictedNotType: 'The "{name}" must not be of `{type}`. Received `{actual}` type.',
