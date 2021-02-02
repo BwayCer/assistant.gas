@@ -2,10 +2,11 @@ import {juruo} from './juruo.js';
 
 
 juruo.set({
-  _assistant_notExistSpreadsheetConfig: 'The spreadsheet config Not set.',
   _assistant_notExistSheet: 'The "{spreadsheet}" spreadsheet is not exist.',
   _assistant_notExistSheetTable:
     'The "{table}" table of "{spreadsheet}" spreadsheet is not exist.',
+  _assistant_notSpreadsheetConfigType:
+    'The "{config}" spreadsheet config is not of `{id: "...", tables: {...}}` type.',
   _assistant_notEqualLengthColumnOfSheetTable:
     'The column length in each row of the table must be equal.',
   _assistant_tableSameKeys: 'Can\'t have two same keys.',
@@ -296,7 +297,7 @@ let joinTable = function () {
  *
  * @memberof module:assistant.
  * @class Gasdb
- * @param {String} spreadsheetName - 試算表名稱（依設定文件）。
+ * @param {String} sheetName - 試算表名稱（依設定文件）。
  * @param {String} tableName - 表格名稱（依設定文件）。
  * @throws {Error} "Gasdb" 的用法不符預期。
  * @throws {Error} "{spreadsheet}" 試算表不存在。
@@ -307,51 +308,48 @@ let joinTable = function () {
  * @example
  * let dbSheet = new Gasdb('spreadsheetName', 'tableName');
  */
-export default function Gasdb(strSheetName, strTableName) {
+export default function Gasdb(sheetName, tableName) {
   let lenArgs = arguments.length;
 
   if (lenArgs !== 2) {
     throw Error(juruo.get('__inconsistentExpectation', {name: 'Gasdb'}));
   }
 
-  let spreadsheetList = deps._config.spreadsheet;
-  if (!spreadsheetList) {
-    throw Error(juruo.get('_assistant_notExistSpreadsheetConfig'));
-  }
-
-  let sheet, table;
+  let sheet, table, sheetConfig;
   let cache = Gasdb._cache;
-  let sheet_id = strSheetName + '_id';
-  let sheet_table = strSheetName + '_table';
-  let sheetKeyOfCache = 'sheet_' + strSheetName;
-  let tableKeyOfCache = 'table_' + strSheetName + '_' + strTableName;
+  let sheetConfigs = Gasdb._spreadsheetConfigs;
+  let sheetKeyOfCache = 'sheet_' + sheetName;
+  let tableKeyOfCache = 'table_' + sheetName + '_' + tableName;
 
   if (cache.hasOwnProperty(tableKeyOfCache)) {
     sheet = cache[sheetKeyOfCache];
     table = cache[tableKeyOfCache];
   } else {
-    if (cache.hasOwnProperty(sheetKeyOfCache)) {
-      sheet = cache[sheetKeyOfCache];
-    } else if (spreadsheetList.hasOwnProperty(sheet_id)) {
-      // 如果資料不正確會拋出錯誤
-      sheet = cache[sheetKeyOfCache]
-        = SpreadsheetApp.openById(spreadsheetList[sheet_id]);
+    if (sheetConfigs.hasOwnProperty(sheetName)) {
+      sheetConfig = sheetConfigs[sheetName];
+
+      if (cache.hasOwnProperty(sheetKeyOfCache)) {
+        sheet = cache[sheetKeyOfCache];
+      } else {
+        // 如果資料不正確會拋出錯誤
+        sheet = cache[sheetKeyOfCache]
+          = SpreadsheetApp.openById(sheetConfig.id);
+      }
     } else {
       throw Error(
-        juruo.get('_assistant_notExistSheet', {spreadsheet: strSheetName})
+        juruo.get('_assistant_notExistSheet', {spreadsheet: sheetName})
       );
     }
 
-    if (spreadsheetList[sheet_table].hasOwnProperty(strTableName)) {
+    if (sheetConfig.tables.hasOwnProperty(tableName)) {
       // 如果資料不正確會拋出錯誤
-      table = cache[tableKeyOfCache] = sheet.getSheetByName(
-        spreadsheetList[sheet_table][strTableName]
-      );
+      table = cache[tableKeyOfCache]
+        = sheet.getSheetByName(sheetConfig.tables[tableName]);
     } else {
       throw Error(
         juruo.get('_assistant_notExistSheetTable', {
-          spreadsheet: strSheetName,
-          table: strTableName,
+          spreadsheet: sheetName,
+          table: tableName,
         })
       );
     }
@@ -369,10 +367,42 @@ export default function Gasdb(strSheetName, strTableName) {
 }
 
 Gasdb._cache = {};
+Gasdb._spreadsheetConfigs = {};
 
 Gasdb.getNewDbKey = getNewDbKey;
 Gasdb.findRowIndexByDbKey = findRowIndexByDbKey;
 Gasdb.join = joinTable;
+
+/**
+ * 設定 Gasdb 試算表列表。
+ *
+ * @memberof module:assistant.Gasdb.
+ * @func setSheetConfig
+ * @param {Gasdb} sheetConfigs - 試算表設定列表。
+ * @throws {Error} "{config}" 試算表設定資訊不是 `{id: "...", tables: {...}}` 的預期類型。
+ *
+ * @example
+ * Gasdb.setSheetConfig({
+ *   sheetName: {id: '...', tables: {...}},
+ *   ...
+ * });
+ */
+Gasdb.setSheetConfig = function (sheetConfigs) {
+  let sheetName, config, id, tables;
+  for (sheetName in sheetConfigs) {
+    config = sheetConfigs[sheetName];
+    id = config['id'];
+    tables = config['tables'];
+
+    if (typeof id !== 'string' || (tables != null && typeof tables !== 'object')) {
+      throw Error(
+        juruo.get('_assistant_notSpreadsheetConfigType', {config: sheetName})
+      );
+    }
+
+    Gasdb._spreadsheetConfigs[sheetName] = {id, tables};
+  }
+};
 
 /**
  * 創建。
