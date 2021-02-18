@@ -114,6 +114,22 @@ function pureTest() {
 function gasTest() {
   Gasdb.setSheetConfig(_conf.spreadsheet);
 
+  let _conf_webRecorder = {
+    request: {
+      'queryString': 'username=jsmith&age=21&age=49',
+      'parameter': {
+        'username': 'jsmith',
+        'age': '21'
+      },
+      'contextPath': '',
+      'parameters': {
+        'username': ['jsmith'],
+        'age': ['21', '49']
+      },
+      'contentLength': -1,
+    },
+  };
+
   _runTest('/', [
     {
       title: 'crypto 加密',
@@ -179,6 +195,147 @@ function gasTest() {
             assert.deepEqual(
               data, clearData,
               '`gasdb.update` 不符合預期的清除。'
+            );
+          },
+        },
+      ],
+    },
+    {
+      title: 'GasWebRecorder 網路黑盒子',
+      its: [
+        {
+          title: 'gasWebRecorder.receiver Success',
+          fn() {
+            let webRecorder = new GasWebRecorder('webRecorder');
+            let receiver = webRecorder.receiver(
+              'Receiver Success',
+              function (request) {
+                debugger;
+              }
+            );
+
+            receiver(_conf_webRecorder.request);
+          },
+        },
+        {
+          title: 'gasWebRecorder.receiver Error',
+          fn() {
+            let webRecorder = new GasWebRecorder('webRecorder');
+            let receiver = webRecorder.receiver(
+              'Receiver Error',
+              function (request) {
+                throw TypeError('Illegal invocation.');
+              }
+            );
+
+            assert.throws(
+              () => receiver(_conf_webRecorder.request),
+              function (err) {
+                return (
+                  err instanceof TypeError
+                  && !!~err.message.indexOf('Illegal invocation.')
+                );
+              },
+              '不符合預期的錯誤。'
+            );
+          },
+        },
+        {
+          title: 'gasWebRecorder.trigger Success',
+          fn() {
+            let webRecorder = new GasWebRecorder('webRecorder');
+            let action = webRecorder.trigger(
+              'Trigger Success',
+              function () {
+                debugger;
+              }
+            );
+
+            action();
+          },
+        },
+        {
+          title: 'gasWebRecorder.trigger Error',
+          fn() {
+            let webRecorder = new GasWebRecorder('webRecorder');
+            let action = webRecorder.trigger(
+              'Trigger Error',
+              function () {
+                throw TypeError('Illegal invocation.');
+              }
+            );
+
+            assert.throws(
+              () => action(),
+              function (err) {
+                return (
+                  err instanceof TypeError
+                  && !!~err.message.indexOf('Illegal invocation.')
+                );
+              },
+              '不符合預期的錯誤。'
+            );
+          },
+        },
+        {
+          title: 'gasWebRecorder.fetch Success',
+          fn() {
+            let webRecorder = new GasWebRecorder('webRecorder');
+            let url = 'https://tool.magiclen.org/ip/';
+            let options = null;
+            let fhrData = webRecorder.fetch(
+              'Fetch Success', url, options,
+              'NotShow', 'Text'
+            );
+          },
+        },
+        {
+          title: 'gasWebRecorder.fetch Image Success',
+          fn() {
+            let webRecorder = new GasWebRecorder('webRecorder');
+            let url = 'http://img1.gamersky.com/image2018/07/20180707_xdj_187_9/image002_S.jpg';
+            let options = null;
+            let fhrData = webRecorder.fetch(
+              'Fetch Success', url, options,
+              'NotShow', 'Blob'
+            );
+            // 儲存圖片
+            // let imageBlob = fhrData.info.getAs(fhrData.contentType);
+            // DriveApp.createFile(imageBlob);
+          },
+        },
+        {
+          title: 'gasWebRecorder.fetch Post Success',
+          fn() {
+            let webRecorder = new GasWebRecorder('webRecorder');
+            let url = 'https://api.telegram.org/bot373213534:AAEmUiQkoFeqCpfN9dV3r67O3BOqZ03sJh4/sendMessage';
+            let postBody = {
+              chat_id: '281634169',
+              // chat_id: '-194592154', //普群識別碼 留存
+              // chat_id: '-1001325775761',
+              parse_mode: 'Markdown',
+              text: 'hi',
+            };
+            let options = {
+              method: 'post',
+              contentType: 'application/json',
+              payload: JSON.stringify(postBody),
+            };
+            let fhrData = webRecorder.fetch(
+              'Fetch Success', url, options,
+              'Text', 'Text'
+            );
+          },
+        },
+        {
+          title: 'gasWebRecorder.fetch Error',
+          fn() {
+            let webRecorder = new GasWebRecorder('webRecorder');
+            let url = 'https://httpstat.us/404';
+            let options = {muteHttpExceptions: true};
+            let fhrData = webRecorder.fetch(
+              'Fetch Error', url, options,
+              'NotShow', 'Text'
             );
           },
         },
