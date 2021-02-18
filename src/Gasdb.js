@@ -553,14 +553,40 @@ Gasdb.prototype.remove = function (rowIdx, isRight) {
  * @memberof module:assistant.Gasdb#
  * @func fill
  * @param {Array} values - 數組化表格。
+ * @param {Number} [columnAmount] - 需填充的直行數量。
  */
-Gasdb.prototype.fill = function (values) {
-  let idx = values.length;
-  let len = this.ColumnMax();
+Gasdb.prototype.fill = function (values, columnAmount) {
+  let _columnAmount = columnAmount > 0 ? columnAmount : this.ColumnMax();
+
+  let newValues = [];
+  let idx = 0;
+  let len = values.length;
   while (idx < len) {
-    values[idx++] = '';
+    newValues[idx] = values[idx++];
   }
-  return values;
+  while (idx < _columnAmount) {
+    newValues[idx++] = '';
+  }
+
+  return newValues;
+};
+
+/**
+ * 填充多列。
+ *
+ * @memberof module:assistant.Gasdb#
+ * @func fillRows
+ * @param {Array} rows - 數組化表格。
+ * @param {Number} [columnAmount] - 需填充的直行數量。
+ */
+Gasdb.prototype.fillRows = function (rows, columnAmount) {
+  let _columnAmount = columnAmount > 0 ? columnAmount : this.ColumnMax();
+
+  let newRows = [];
+  for (let rowIdx = 0, rowLen = rows.length; rowIdx < rowLen; rowIdx++) {
+    newRows.push(this.fill(rows[rowIdx], _columnAmount));
+  }
+  return newRows;
 };
 
 /**
