@@ -112,6 +112,8 @@ function pureTest() {
 }
 
 function gasTest() {
+  Gasdb.setSheetConfig(_conf.spreadsheet);
+
   _runTest('/', [
     {
       title: 'crypto 加密',
@@ -123,6 +125,60 @@ function gasTest() {
               crypto.md5('abcdefg'),
               '7ac66c0f148de9519b8bd264312c4d64',
               '不符合預期。'
+            );
+          },
+        },
+      ],
+    },
+    {
+      title: 'Gasdb 谷歌腳本資料庫',
+      its: [
+        {
+          title: 'gasdb.create',
+          fn() {
+            let dbSheet = new Gasdb('test', 'gasdb');
+            let dbKey = Gasdb.getNewDbKey(dbSheet);
+            let newData = [
+              dbKey,
+              (new Date()).toISOString(),
+              '測 1',
+              '測 2',
+            ];
+            dbSheet.create(dbSheet.fill(newData));
+
+            let data = dbSheet.readRange([dbSheet.RowLast(), 1, 1, 4]);
+            assert.deepEqual(
+              data, [newData],
+              '`gasdb.create` 不符合預期。'
+            );
+          },
+        },
+        {
+          title: 'gasdb.update',
+          fn() {
+            let dbSheet = new Gasdb('test', 'gasdb');
+            let dbKey = Gasdb.getNewDbKey(dbSheet);
+            let rowNew = dbSheet.RowNew();
+
+            let data;
+            let addData = dbSheet.fillRows([
+              [dbKey,     '測 rm1'],
+              [dbKey + 1, '測 rm2'],
+            ]);
+            let clearData = dbSheet.fillRows([[], []]);
+
+            dbSheet.update([rowNew, 2], addData);
+            data = dbSheet.read([rowNew, 2]);
+            assert.deepEqual(
+              data, addData,
+              '`gasdb.update` 不符合預期的寫入。'
+            );
+
+            dbSheet.update([rowNew, 2], clearData);
+            data = dbSheet.read([rowNew, 2]);
+            assert.deepEqual(
+              data, clearData,
+              '`gasdb.update` 不符合預期的清除。'
             );
           },
         },
