@@ -64,26 +64,17 @@ function pureTest() {
             {
               title: '錯誤測試: 非預期的參數',
               fn() {
-                try {
-                  timeStamp.readable();
-                } catch (err) {
-                  assert.strictEqual(
-                      err.name,
-                      'TypeError',
-                      '不符合預期的未帶指定日參數時的錯誤類型。'
-                  );
-                  assert.ok(
-                    err.message.indexOf('The "dt" must be of `Date`.') === 0,
-                    '不符合預期的未帶指定日參數時的錯誤訊息。'
-                  );
-                }
-                try {
-                  timeStamp.readable(new Date());
-                } catch (err) {
-                  assert.strictEqual(
-                    null, err, '不符合預期的未帶格式化文字參數時會拋出錯誤。'
-                  );
-                }
+                assert.throws(
+                  () => timeStamp.readable(),
+                  function (err) {
+                    return (
+                      err instanceof TypeError
+                      && !!~err.message.indexOf('The "dt" must be of `Date`.')
+                    );
+                  },
+                  '不符合預期的未帶指定日參數時的錯誤。'
+                );
+
                 assert.strictEqual(
                   timeStamp.readable(new Date()),
                   '',
