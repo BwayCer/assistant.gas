@@ -2,7 +2,7 @@ import {juruo} from './juruo.js';
 
 
 juruo.set({
-    _assistant_notExistTgbot: 'Telegram bot "{botName}" is not exist.',
+  _assistant_notExistTgbot: 'Telegram bot "{botName}" is not exist.',
 });
 
 
@@ -30,48 +30,48 @@ juruo.set({
  *   {String} content }
  */
 export function tgbot(
-    actItem, botName, method, anyOptions,
-    requestContentShowMethodArgu, receiveContentShowMethodArgu
+  actItem, botName, method, anyOptions,
+  requestContentShowMethodArgu, receiveContentShowMethodArgu
 ) {
-    var requestContentShowMethod = requestContentShowMethodArgu || 'Text';
-    var receiveContentShowMethod = receiveContentShowMethodArgu || 'Text';
+  var requestContentShowMethod = requestContentShowMethodArgu || 'Text';
+  var receiveContentShowMethod = receiveContentShowMethodArgu || 'Text';
 
-    var fhrData, tgBotToken, tgBotUrl, options;
-    var botTokenList = deps._config.tgBotToken;
+  var fhrData, tgBotToken, tgBotUrl, options;
+  var botTokenList = deps._config.tgBotToken;
 
-    if (botTokenList.hasOwnProperty(botName)) {
-        tgBotToken = botTokenList[botName];
-    } else {
-        throw Error(
-            juruo.get('_assistant_notExistTgbot', {
-                botName: botName,
-            })
-        );
-    }
-
-    tgBotUrl = 'https://api.telegram.org/' + tgBotToken + '/' + method;
-
-    // 由於在谷歌應用程式腳本中送出 Blob 似乎不容易，
-    // 故在電報介面中採取默認為 JSON，否則則給予高度客製。
-    if (anyOptions.hasOwnProperty('method')) {
-        options = anyOptions;
-    } else {
-        options = {
-            method: 'post',
-            contentType: 'application/json',
-            payload: JSON.stringify(anyOptions),
-        };
-    }
-
-    fhrData = deps.webRecorder.fetch(
-        actItem, tgBotUrl, options,
-        requestContentShowMethod, receiveContentShowMethod
+  if (botTokenList.hasOwnProperty(botName)) {
+    tgBotToken = botTokenList[botName];
+  } else {
+    throw Error(
+      juruo.get('_assistant_notExistTgbot', {
+        botName: botName,
+      })
     );
+  }
 
-    if (receiveContentShowMethod === 'Text') {
-        fhrData.content = JSON.parse(fhrData.content);
-    }
+  tgBotUrl = 'https://api.telegram.org/' + tgBotToken + '/' + method;
 
-    return fhrData;
-};
+  // 由於在谷歌應用程式腳本中送出 Blob 似乎不容易，
+  // 故在電報介面中採取默認為 JSON，否則則給予高度客製。
+  if (anyOptions.hasOwnProperty('method')) {
+    options = anyOptions;
+  } else {
+    options = {
+      method: 'post',
+      contentType: 'application/json',
+      payload: JSON.stringify(anyOptions),
+    };
+  }
+
+  fhrData = deps.webRecorder.fetch(
+    actItem, tgBotUrl, options,
+    requestContentShowMethod, receiveContentShowMethod
+  );
+
+  if (receiveContentShowMethod === 'Text') {
+    fhrData.content = JSON.parse(fhrData.content);
+  }
+
+  return fhrData;
+}
 
