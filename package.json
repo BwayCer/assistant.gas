@@ -3,6 +3,17 @@
   "version": "0.0.0",
   "description": "處理專屬於谷歌應用程式腳本的特定程式，或者常用的功能。",
   "type": "module",
+  "main": "./src/main.js",
+  "exports": {
+    ".": "./src/main.js",
+    "./timestamp": "./src/assets/timestamp.js",
+    "./Gasdb": "./src/assets/Gasdb.js",
+    "./joinTable": "./src/assets/joinTable.js",
+    "./GasWebRecorder": "./src/assets/GasWebRecorder.js",
+    "./juruo": "./src/assets/juruo.js",
+    "./crypto": "./src/assets/crypto.js",
+    "./tgbot": "./src/assets/tgbot.js"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/BwayCer/assistant.gas.git"
