@@ -1,12 +1,36 @@
 'use strict';
 
 
+const _conf = {
+  "spreadsheet": {
+    "test": {
+      "id": "1U2xpIxpEO5c8qLtlhODJquKl_JYCXqozQ2bUu3sbe-8",
+      "tables": {
+        "gasdb": "Gasdb",
+      },
+    },
+    "webRecorder": {
+      "id": "1U2xpIxpEO5c8qLtlhODJquKl_JYCXqozQ2bUu3sbe-8",
+      "tables": {
+        "track": "Track",
+        "error": "Error",
+      },
+    },
+  },
+};
+
+
 function v8Test() {
   console.log(Object.assign({}, {a: 1}, {a: 2, b: 2}));
   console.log(Reflect.apply(Math.floor, undefined, [1.75]));
 }
 
 function pureTest() {
+  const {
+    juruoReplace,
+  } = assistant;
+
+
   _runTest('/', [
     {
       title: 'juruo 蒟蒻',
@@ -103,6 +127,12 @@ function pureTest() {
 }
 
 function gasTest() {
+  const {
+    crypto,
+    Gasdb, GasWebRecorder,
+  } = assistant;
+
+
   Gasdb.setSheetConfig(_conf.spreadsheet);
 
   let _conf_webRecorder = {
@@ -354,3 +384,4 @@ function _runTest(title, groups) {
     }
   }
 }
+

@@ -1,7 +1,5 @@
 
 **/**
 !appsscript.json
-!dist/apiALib.js
-!dist/apiEntry.js
-!dist/apiEntryTest.js
+!test/**/**
 
