@@ -49,3 +49,20 @@ export function findRowIndexByDbKey(table, dbKey) {
   return -1;
 }
 
+
+export function isErrorValue(value) {
+  switch (value) {
+    case '#NULL!':
+    case '#DIV/0!':
+    case '#VALUE!':
+    case '#REF!':
+    case '#NAME?':
+    case '#NUM!':
+    case '#N/A':
+    case '#ERROR!':
+      return true;
+    default:
+      return false;
+  }
+}
+

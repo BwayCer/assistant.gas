@@ -1,6 +1,7 @@
 import {juruo} from './juruo.js';
 import {
   getNewDbKey, findRowIndexByDbKey,
+  isErrorValue,
 } from './GasdbSuppor.js';
 
 
@@ -95,6 +96,7 @@ Gasdb._spreadsheetConfigs = {};
 
 Gasdb.getNewDbKey = getNewDbKey;
 Gasdb.findRowIndexByDbKey = findRowIndexByDbKey;
+Gasdb.isErrorValue = isErrorValue;
 
 /**
  * 設定 Gasdb 試算表列表。
