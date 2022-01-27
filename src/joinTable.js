@@ -1,12 +1,12 @@
 
-import {juruo} from './juruo.js';
+import {juruoReplace} from './juruo.js';
 
 
-juruo.set({
+const _msgPkg = {
   _assistant_notEqualLengthColumnOfSheetTable:
     'The column length in each row of the table must be equal.',
   _assistant_tableSameKeys: 'Can\'t have two same keys.',
-});
+};
 
 
 /**
@@ -111,7 +111,7 @@ function _getNewTableInfo(listForTableJoinInfoList) {
   ) {
     if (tableJoinInfoList == null || tableJoinInfoList.constructor !== Array) {
       throw TypeError(
-        juruo.get('__restrictedType', {
+        juruoReplace('__restrictedType', {
           name: 'tableJoinInfoList',
           type: 'Array',
           actual: typeof tableJoinInfoList,
@@ -124,7 +124,7 @@ function _getNewTableInfo(listForTableJoinInfoList) {
 
     if (table == null || table.constructor !== Array) {
       throw TypeError(
-        juruo.get('__restrictedType', {
+        juruoReplace('__restrictedType', {
           name: 'tableJoinInfoList[1]',
           type: 'Array',
           actual: typeof table,
@@ -149,7 +149,7 @@ function _getNewTableInfo(listForTableJoinInfoList) {
 
       if (val == null || val.constructor !== Array) {
         throw TypeError(
-          juruo.get('__restrictedType', {
+          juruoReplace('__restrictedType', {
             name: 'tableJoinInfoList[1][' + idx + ']',
             type: 'Array',
             actual: typeof val,
@@ -157,9 +157,7 @@ function _getNewTableInfo(listForTableJoinInfoList) {
         );
       }
       if (val.length !== column) {
-        throw RangeError(
-          juruo.get('_assistant_notEqualLengthColumnOfSheetTable')
-        );
+        throw RangeError(_msgPkg._assistant_notEqualLengthColumnOfSheetTable);
       }
 
       key = val[idxKey];
@@ -167,7 +165,7 @@ function _getNewTableInfo(listForTableJoinInfoList) {
 
       // 是否 key 引索值重複
       if (!bisEmptyKey && ~tableKeyList.indexOf(key)) {
-        throw Error(juruo.get('_assistant_tableSameKeys'));
+        throw Error(_msgPkg._assistant_tableSameKeys);
       }
 
       tableKeyList.push(key);

@@ -1,9 +1,10 @@
-import {juruo} from './juruo.js';
+
+import {juruoReplace} from './juruo.js';
 
 
-juruo.set({
+const _msgPkg = {
   _assistant_notExistTgbot: 'Telegram bot "{botName}" is not exist.',
-});
+};
 
 
 /**
@@ -43,9 +44,7 @@ export function tgbot(
     tgBotToken = botTokenList[botName];
   } else {
     throw Error(
-      juruo.get('_assistant_notExistTgbot', {
-        botName: botName,
-      })
+      juruoReplace(_msgPkg._assistant_notExistTgbot, {botName})
     );
   }
 
