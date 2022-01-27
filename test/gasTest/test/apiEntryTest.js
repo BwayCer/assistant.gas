@@ -3,21 +3,32 @@
 
 const _conf = {
   "spreadsheet": {
-    "test": {
-      "id": "1U2xpIxpEO5c8qLtlhODJquKl_JYCXqozQ2bUu3sbe-8",
-      "tables": {
-        "gasdb": "Gasdb",
-      },
-    },
     "webRecorder": {
-      "id": "1U2xpIxpEO5c8qLtlhODJquKl_JYCXqozQ2bUu3sbe-8",
-      "tables": {
-        "track": "Track",
-        "error": "Error",
-      },
+      "id": "1Yz2fwmap_znUG5Dm9c_iEfxbq-v188lXmm9HCvurUuc",
+      // "tables": {
+      //   "track": "Track",
+      //   "error": "Error",
+      // },
+    },
+    "test": {
+      "id": "1Yz2fwmap_znUG5Dm9c_iEfxbq-v188lXmm9HCvurUuc",
+      // "tables": {
+      //   "gasdb": "Gasdb",
+      // },
+    },
+  },
+  "telegram": {
+    "bot": {
+      "_": null,
+    },
+    "chat": {
+      "bwaycer": "281634169",
+      // chat_id: '-194592154', //普群識別碼 留存
+      // chat_id: '-1001325775761',
     },
   },
 };
+const _spreadsheet = _conf.spreadsheet;
 
 
 function v8Test() {
@@ -67,8 +78,6 @@ function gasTest() {
   } = assistant;
 
 
-  Gasdb.setSheetConfig(_conf.spreadsheet);
-
   let _conf_webRecorder = {
     request: {
       'queryString': 'username=jsmith&age=21&age=49',
@@ -107,7 +116,7 @@ function gasTest() {
         {
           title: 'gasdb.create',
           fn() {
-            let dbSheet = new Gasdb('test', 'gasdb');
+            let dbSheet = new Gasdb(_spreadsheet.test.id, 'gasdb');
             let dbKey = Gasdb.getNewDbKey(dbSheet);
             let newData = [
               dbKey,
@@ -115,9 +124,9 @@ function gasTest() {
               '測 1',
               '測 2',
             ];
-            dbSheet.create(dbSheet.fill(newData));
+            dbSheet.create([dbSheet.fill(newData)]);
 
-            let data = dbSheet.readRange([dbSheet.RowLast(), 1, 1, 4]);
+            let data = dbSheet.read([dbSheet.rowLast(), 1, 1, 4]);
             assert.deepEqual(
               data, [newData],
               '`gasdb.create` 不符合預期。'
@@ -127,9 +136,9 @@ function gasTest() {
         {
           title: 'gasdb.update',
           fn() {
-            let dbSheet = new Gasdb('test', 'gasdb');
+            let dbSheet = new Gasdb(_spreadsheet.test.id, 'gasdb');
             let dbKey = Gasdb.getNewDbKey(dbSheet);
-            let rowNew = dbSheet.RowNew();
+            let rowNew = dbSheet.rowNew();
 
             let data;
             let addData = dbSheet.fillRows([
@@ -161,7 +170,7 @@ function gasTest() {
         {
           title: 'gasWebRecorder.receiver Success',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
             let receiver = webRecorder.receiver(
               'Receiver Success',
               function (request) {
@@ -175,7 +184,7 @@ function gasTest() {
         {
           title: 'gasWebRecorder.receiver Error',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
             let receiver = webRecorder.receiver(
               'Receiver Error',
               function (request) {
@@ -198,7 +207,7 @@ function gasTest() {
         {
           title: 'gasWebRecorder.trigger Success',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
             let action = webRecorder.trigger(
               'Trigger Success',
               function () {
@@ -212,7 +221,7 @@ function gasTest() {
         {
           title: 'gasWebRecorder.trigger Error',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
             let action = webRecorder.trigger(
               'Trigger Error',
               function () {
@@ -235,7 +244,7 @@ function gasTest() {
         {
           title: 'gasWebRecorder.fetch Success',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
             let url = 'https://tool.magiclen.org/ip/';
             let options = null;
             let fhrData = webRecorder.fetch(
@@ -247,7 +256,7 @@ function gasTest() {
         {
           title: 'gasWebRecorder.fetch Image Success',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
             let url = 'http://img1.gamersky.com/image2018/07/20180707_xdj_187_9/image002_S.jpg';
             let options = null;
             let fhrData = webRecorder.fetch(
@@ -262,12 +271,15 @@ function gasTest() {
         {
           title: 'gasWebRecorder.fetch Post Success',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
-            let url = 'https://api.telegram.org/bot373213534:AAEmUiQkoFeqCpfN9dV3r67O3BOqZ03sJh4/sendMessage';
+            let tgBotToken = _conf.telegram.bot._;
+            if (tgBotToken === null) {
+              console.log('skip. (No telegram token)');
+            }
+
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
+            let url = `https://api.telegram.org/bot${tgBotToken}/sendMessage`;
             let postBody = {
-              chat_id: '281634169',
-              // chat_id: '-194592154', //普群識別碼 留存
-              // chat_id: '-1001325775761',
+              chat_id: _conf.telegram.chat.bwaycer,
               parse_mode: 'Markdown',
               text: 'hi',
             };
@@ -285,7 +297,7 @@ function gasTest() {
         {
           title: 'gasWebRecorder.fetch Error',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
             let url = 'https://httpstat.us/404';
             let options = {muteHttpExceptions: true};
             let fhrData = webRecorder.fetch(
