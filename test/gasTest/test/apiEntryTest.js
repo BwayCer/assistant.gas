@@ -39,83 +39,17 @@ function pureTest() {
           title: '設定與取得語言包',
           its: [
             {
-              title: '取得不存在的語言包會取得 "Unexpected log message." 訊息',
-              fn() {
-                assert.strictEqual(
-                  juruo.get('bway'),
-                  'Unexpected log message.',
-                  '不符合預期。'
-                );
-              },
-            },
-            {
-              title: '普通設定並取得語言包',
-              fn() {
-                juruo.set('bway', 'Im BwayCer.');
-                assert.strictEqual(
-                  juruo.get('bway'),
-                  'Im BwayCer.',
-                  '不符合預期。'
-                );
-              },
-            },
-            {
               title: '參數設定並取得語言包',
               fn() {
-                juruo.set('who', 'Im {name}.');
                 assert.strictEqual(
-                  juruo.get('who', {name: 'BwayCer'}),
+                  juruoReplace('Im {{name}}.', {name: 'BwayCer'}),
                   'Im BwayCer.',
                   '不符合預期。'
                 );
                 assert.strictEqual(
-                  juruo.get('who'),
-                  'Im {name}.',
+                  juruoReplace('Im {{name}}.', {}),
+                  'Im {{name}}.',
                   '不符合預期的無參數時不替換任何文字。'
-                );
-              },
-            },
-          ],
-        },
-      ],
-    },
-    {
-      title: 'timeStamp 時間戳',
-      describes: [
-        {
-          title: '可讀化',
-          its: [
-            {
-              title: '錯誤測試: 非預期的參數',
-              fn() {
-                assert.throws(
-                  () => timeStamp.readable(),
-                  function (err) {
-                    return (
-                      err instanceof TypeError
-                      && !!~err.message.indexOf('The "dt" must be of `Date`.')
-                    );
-                  },
-                  '不符合預期的未帶指定日參數時的錯誤。'
-                );
-
-                assert.strictEqual(
-                  timeStamp.readable(new Date()),
-                  '',
-                  '不符合預期的未帶格式化文字參數時的回傳值。'
-                );
-              },
-            },
-            {
-              title: '取得 "UTC:%Y-%m-%dT%H:%M:%S:%NZ %% %t" 時間格式',
-              fn() {
-                assert.strictEqual(
-                  timeStamp.readable(
-                    new Date('1970-01-02T03:04:05.678Z'),
-                    'UTC:%Y-%m-%dT%H:%M:%S.%NZ %% %t'
-                  ),
-                  '1970-01-02T03:04:05.678Z % 97445678',
-                  '不符合預期。'
                 );
               },
             },
