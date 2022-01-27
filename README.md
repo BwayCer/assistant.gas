@@ -37,7 +37,6 @@
     * [谷歌雲平台 日誌介面](https://console.cloud.google.com)
   * 限制
     * [谷歌開發者文件 服務配額](https://developers.google.com/apps-script/guides/services/quotas)
-    * [谷歌雲端硬碟 配額限制](https://script.google.com/dashboard)
 
 
 
