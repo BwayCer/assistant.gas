@@ -1,50 +1,38 @@
 
-const {task, series, parallel, watch, src, dest} = require('gulp');
-
-const rollup = require('gulp-better-rollup');
-const rollupNodePolyfills = require('rollup-plugin-node-polyfills');
-const rollupBabel = require('@rollup/plugin-babel');
-const rollupTerser = require('rollup-plugin-terser');
+import gulp from 'gulp';
+import rollup from 'gulp-better-rollup';
+import rollupOptions from '@bwaycer/ht-modern-web/rollup/options';
+import rollupNodePolyfills from 'rollup-plugin-node-polyfills';
 
 
-let rollupPlugins = [
-  rollupNodePolyfills(),
-  rollupBabel.babel({babelHelpers: 'bundled'}),
-  rollupTerser.terser({
-    compress: false,
-    mangle: false,
-    format: {
-      beautify: true,
-      comments: false,
-      indent_level: 2,
-    },
-  })
-];
+const {parallel, dest} = gulp;
 
-task('build', function rollupWrap() {
-  return src('src/main.js')
-    .pipe(rollup({
-      plugins: rollupPlugins,
-    }, 'es'))
+
+let assetRollupPlugins = rollupOptions.parsePlugins(
+  'asset',
+  (name, handle, options) =>
+    name !== 'nodePolyfills' ? handle(options) : rollupNodePolyfills()
+);
+
+
+export let test_gasTest = parallel(
+  () => gulp
+    .src([
+      'test/gasTest/.clasp.json',
+      'test/gasTest/.claspignore',
+      'test/gasTest/appsscript.json',
+      'test/gasTest/test/apiEntryTest.js',
+    ], {
+      base: 'test/gasTest/',
+    })
     .pipe(dest('dist'))
-  ;
-});
-
-task('build:test', series(
-  function rollupWrap() {
-    return src('test/gasTest/src/apiALib.js')
-      .pipe(rollup({
-        plugins: rollupPlugins,
-      }, 'cjs'))
-      .pipe(dest('test/gasTest/dist'))
-    ;
-  },
-  function cpFiles() {
-    return src([
-        'test/gasTest/src/apiEntry*.js',
-      ])
-      .pipe(dest('test/gasTest/dist'))
-    ;
-  }
-));
+  ,
+  () => gulp
+    .src('test/gasTest/test/apiALib.js')
+    .pipe(rollup({
+      plugins: assetRollupPlugins,
+    }, 'es'))
+    .pipe(dest('dist/test'))
+  ,
+);
 
