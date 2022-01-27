@@ -1,3 +1,4 @@
+
 import Gasdb from './Gasdb.js';
 
 
@@ -7,17 +8,22 @@ import Gasdb from './Gasdb.js';
 // 黑盒子試算表樣本：
 // https://docs.google.com/spreadsheets/d/19DcWdAVCJcAzhu0dq-G4g51BOQZg6gX3kjPf-lja4ps/edit?usp=sharing
 
+
+const _sheetTableMap = {
+  track: 'Track',
+  error: 'Error',
+};
+
+
 /**
  * 網路黑盒子。
  *
  * @memberof module:assistant.
  * @class GasWebRecorder
- * @param {String} sheetName - 試算表名稱。
+ * @param {String} sheetId - 試算表識別碼。
  *
  * @example
- * GasWebRecorder.setSheetConfig('webRecorder', <id>);
- *
- * let webRecorder = new GasWebRecorder('webRecorder');
+ * let webRecorder = new GasWebRecorder(<sheetId>);
  * let doGet  = webRecorder.receiver('Get  項目', function (request) {...});
  * let doPost = webRecorder.receiver('Post 項目', function (request) {...});
  * let triggerAction = webRecorder.trigger('trigger 項目', function () {...});
@@ -40,39 +46,22 @@ import Gasdb from './Gasdb.js';
  *   "contentLength": -1
  * });
  */
-export default function GasWebRecorder(sheetName) {
-  this._sheetName = sheetName;
+export default function GasWebRecorder(sheetId) {
+  this._sheetId = sheetId;
 }
-
-/**
- * 設定 Gasdb 試算表列表。
- *
- * @memberof module:assistant.gasWebRecorder.
- * @func setSheetConfig
- * @param {String} sheetName - 試算表名稱。
- * @param {String} id - 試算表識別碼。
- */
-GasWebRecorder.setSheetConfig = function (sheetName, id) {
-  let sheetConfigs = {};
-  sheetConfigs[sheetName] = {
-    id: id,
-    tables: {
-      track: 'Track',
-      error: 'Error',
-    },
-  };
-  Gasdb.setSheetConfig(sheetConfigs);
-};
 
 function _AddLine(dbSheet, service, actItem) {
   let now = new Date();
 
   this._dbSheet = dbSheet;
   this.timeStamp = +now;
-  this.idxRowNew = dbSheet.RowNew();
   this.dbKey = Gasdb.getNewDbKey(dbSheet);
 
-  dbSheet.create(dbSheet.fill([
+  // 若使用 `new Array(n)` 但沒有賦予值的情況下
+  // 試算表會出現 "NOT_FOUND" 提示。
+  this.followUpLineValue
+    = Array.from(new Array(19), function () { return '' });
+  this.idxRowNew = dbSheet.create([dbSheet.fill([
     // 0. 引索
     this.dbKey,
     // 1. 標準時間戳
@@ -103,36 +92,91 @@ function _AddLine(dbSheet, service, actItem) {
     // 21. 回應內容大小
     // 22. 回應內容格式
     // 23. 回應內容
-  ]));
+  ])]);
 }
 
-_AddLine.prototype.replyState = function (state, errLink, consumeTimeMs) {
-  this._dbSheet.updateRange(
-    [this.idxRowNew, 6, 1, 3],
-    [[state, errLink, consumeTimeMs]]
-  );
+_AddLine.prototype.recorderRequest = function (readContentType, request) {
+  let isFetch = readContentType !== 'n/a';
+  let payload = request.hasOwnProperty('payload') ? request.payload : '';
+  let isHasPayload = payload.length > 0;
+
+  let urlInfo = request.url.split('?');
+
+  // 空值可能有 "n/a" 和 "NotShow"
+  let readContent = '';
+  if (readContentType === 'Text' || (!isFetch && isHasPayload)) {
+    // request.payload 為 `String` 類型
+    readContent = payload;
+  }
+  // TODO 轉換為 Blob 的方法
+
+
+  this.followUpLineValue[4] = urlInfo[0];
+  // method
+  this.followUpLineValue[5] = request.method.toUpperCase() || '';
+  this.followUpLineValue[6] = urlInfo[1] || '';
+  // headers
+  this.followUpLineValue[7]
+    = request.hasOwnProperty('headers') ? JSON.stringify(request.headers) : '';
+  // contentType
+  this.followUpLineValue[8]
+    = request.hasOwnProperty('contentType') ? request.contentType : '';
+
+  if (isFetch || isHasPayload) {
+    // contentLength
+    this.followUpLineValue[9] = payload.length;
+    this.followUpLineValue[10] = readContentType;
+    this.followUpLineValue[11] = readContent;
+  }
+
+  // 只需紀錄 UrlFetchApp 的請求所有參數解析
+  if (isFetch) {
+    this.followUpLineValue[12] = JSON.stringify(request);
+  }
 };
 
-function _tryCatchRun(sheetName, run, runArgu) {
-  let dbSheetErr, idxRowNewErr, dbKeyErr;
-  let rtnVal, err, startTimeMs, consumeTimeMs;
+_AddLine.prototype.recorderReceive = function (readContentType, receive) {
+  this.followUpLineValue[13] = receive.statusCode;
+  let headers = receive.headers;
+  this.followUpLineValue[14] = headers === '' ? '' : JSON.stringify(headers);
+  this.followUpLineValue[15] = receive.contentType;
+  this.followUpLineValue[16] = receive.contentLength;
+  this.followUpLineValue[17] = readContentType;
+  this.followUpLineValue[18] = receive.content;
+};
 
+_AddLine.prototype.finish = function (tryCatchRunInfo) {
+  let state = '成功';
+  let errLink = '';
+  if (!tryCatchRunInfo.ok) {
+    state = '失敗';
+    errLink = tryCatchRunInfo.errLink;
+  }
+  this.followUpLineValue[0] = state;
+  this.followUpLineValue[1] = errLink;
+  this.followUpLineValue[2] = +new Date() - this.timeStamp;
+  this.followUpLineValue[3] = tryCatchRunInfo.consumeTimeMs;
+  this._dbSheet.update([this.idxRowNew, 6, 1, 19], [this.followUpLineValue]);
+};
+
+
+function _tryCatchRun(sheetId, run, runArgu) {
+  let rtnVal, err, consumeTimeMs;
   try {
-    startTimeMs = +(new Date());
+    let startTimeMs = +new Date();
     rtnVal = arguments.length > 2 ? run(runArgu) : run();
-    consumeTimeMs = +(new Date()) - startTimeMs;
+    consumeTimeMs = +new Date() - startTimeMs;
   } catch (error) {
     err = error;
   }
 
   if (err) {
-    dbSheetErr = new Gasdb(sheetName, 'error');
-    idxRowNewErr = dbSheetErr.RowNew();
-    dbKeyErr = Gasdb.getNewDbKey(dbSheetErr);
-    dbSheetErr.create(dbSheetErr.fill([
+    let dbSheetErr = new Gasdb(sheetId, _sheetTableMap.error);
+    let dbKeyErr = Gasdb.getNewDbKey(dbSheetErr);
+    let idxRowNewErr = dbSheetErr.create([dbSheetErr.fill([
       dbKeyErr,
       err.name, err.message, err.stack
-    ]));
+    ])]);
 
     return {
       ok: false,
@@ -148,182 +192,99 @@ function _tryCatchRun(sheetName, run, runArgu) {
   }
 }
 
-function _runReceiver(sheetName, actItem, request, run) {
-  let tryCatchRunInfo;
-  let dbSheet = new Gasdb(sheetName, 'track');
-  let newLine = new _AddLine(dbSheet, 'WebApp', actItem);
+function _runBase(service, sheetId, actItem, request, run) {
+  let dbSheet = new Gasdb(sheetId, _sheetTableMap.track);
+  let newLine = new _AddLine(dbSheet, service, actItem);
 
-  _runReceiver_recorderRequest(dbSheet, newLine.idxRowNew, request);
-  newLine.replyState('接收', '', '');
-  tryCatchRunInfo = _tryCatchRun(sheetName, run, request);
+  if (service === 'WebApp') {
+    _runReceiver_recorderRequest(newLine, request);
+  }
+  let tryCatchRunInfo = _tryCatchRun(sheetId, run, request);
 
-  let timeSpend = +(new Date()) - newLine.timeStamp;
   if (tryCatchRunInfo.ok) {
-    newLine.replyState('成功', '', timeSpend);
+    newLine.finish(tryCatchRunInfo);
     return tryCatchRunInfo.returnValue;
   } else {
-    newLine.replyState('失敗', tryCatchRunInfo.errLink, timeSpend);
+    newLine.finish(tryCatchRunInfo);
     throw tryCatchRunInfo.err;
   }
 }
 
-function _runReceiver_recorderRequest(dbSheet, idxRowNew, request) {
-  let requestPostData;
-  let contentLength = request.contentLength;
-  let isGetType = !~contentLength;
-
-  // 若使用 `new Array(7)` 但沒有賦予值的情況下
-  // 試算表會出現 "NOT_FOUND" 提示。
-  let newLine = ['', '', '', '', '', '', ''];
-  newLine[0] = isGetType ? 'GET' : 'POST';
-  newLine[1] = request.queryString;
-
-  if (!isGetType) {
-    requestPostData = request.postData;
-    newLine[3] = requestPostData.type;
-    newLine[4] = contentLength;
-    newLine[5] = 'n/a';
-    newLine[6] = requestPostData.contents;
+function _runReceiver_recorderRequest(newLine, request) {
+  let isGetType = !~request.contentLength;
+  let requestInfo = {
+    url: '?' + request.queryString,
+    method: isGetType ? 'GET' : 'POST',
+  };
+  if (!isGetType && request.hasOwnProperty('postData')) {
+    let requestPostData = request.postData;
+    requestInfo.contentType = requestPostData.type;
+    requestInfo.payload = requestPostData.contents;
   }
-
-  dbSheet.updateRange([idxRowNew, 11, 1, 7], [newLine]);
-}
-
-function _runTrigger(sheetName, actItem, run) {
-  let tryCatchRunInfo;
-  let dbSheet = new Gasdb(sheetName, 'track');
-  let newLine = new _AddLine(dbSheet, 'Trigger', actItem);
-
-  newLine.replyState('運行', '', '');
-  tryCatchRunInfo = _tryCatchRun(sheetName, run);
-
-  let timeSpend = +(new Date()) - newLine.timeStamp;
-  if (tryCatchRunInfo.ok) {
-    newLine.replyState('成功', '', timeSpend);
-  } else {
-    newLine.replyState('失敗', tryCatchRunInfo.errLink, timeSpend);
-    throw tryCatchRunInfo.err;
-  }
+  newLine.recorderRequest('n/a', requestInfo);
 }
 
 function _runFetch(
-  sheetName, actItem, url, options,
+  sheetId, actItem, url, options,
   requestContentShowMethod, receiveContentShowMethod
 ) {
-  let tryCatchRunInfo, receiveInfo;
-  let dbSheet = new Gasdb(sheetName, 'track');
+  let dbSheet = new Gasdb(sheetId, _sheetTableMap.track);
   let newLine = new _AddLine(dbSheet, 'UrlFetchApp', actItem);
-  let idxRowNew = newLine.idxRowNew;
 
-  _runFetch_recorderRequest(
-    dbSheet, idxRowNew,
-    url, options, requestContentShowMethod
+  newLine.recorderRequest(
+    requestContentShowMethod,
+    UrlFetchApp.getRequest(url, options)
   );
-  newLine.replyState('請求', '', '');
-  tryCatchRunInfo = _tryCatchRun(sheetName, function () {
+  let tryCatchRunInfo = _tryCatchRun(sheetId, function () {
     return UrlFetchApp.fetch(url, options);
   });
 
-  let timeSpend = +(new Date()) - newLine.timeStamp;
   if (tryCatchRunInfo.ok) {
-    // 請求耗時
-    dbSheet.updateRange([idxRowNew, 9], tryCatchRunInfo.consumeTimeMs);
-    receiveInfo = new _runFetch_recorderReceive(
-      dbSheet, idxRowNew,
+    let receiveInfo = new FetchReceive(
       tryCatchRunInfo.returnValue,
       receiveContentShowMethod
     );
-    newLine.replyState('成功', '', timeSpend);
+    newLine.recorderReceive(receiveContentShowMethod, receiveInfo);
+    newLine.finish(tryCatchRunInfo);
     return receiveInfo;
   } else {
-    newLine.replyState('失敗', tryCatchRunInfo.errLink, timeSpend);
+    newLine.finish(tryCatchRunInfo);
     throw tryCatchRunInfo.err;
   }
 }
 
-function _runFetch_recorderRequest(
-  dbSheet, idxRowNew,
-  url, options, contentShowMethod
-) {
-  let readContentType, readContent;
-  let newLine = new Array(9);
-  let urlInfo = url.split('?');
-  let request = UrlFetchApp.getRequest(url, options);
-
-  switch (contentShowMethod) {
-    case 'Text':
-      readContentType = 'Text';
-      // request.payload 為 `String` 類型
-      readContent = request.payload;
-      break;
-      // TODO 轉換為 Blob 的方法
-      // case 'Blob': break;
-    case 'NotShow':
-    default:
-      readContentType = 'NotShow';
-      readContent = '';
-  }
-
-  newLine[0] = urlInfo[0];
-  // method
-  newLine[1] = request.method || '';
-  newLine[2] = urlInfo[1] || '';
-  // headers
-  newLine[3] = request.headers ? JSON.stringify(request.headers) : '';
-  // contentType
-  newLine[4] = request.contentType || '';
-  // contentLength
-  newLine[5] = request.payload.length || '';
-  newLine[6] = readContentType;
-  newLine[7] = readContent;
-  newLine[8] = JSON.stringify(request);
-
-  dbSheet.updateRange([idxRowNew, 10, 1, 9], [newLine]);
-}
-
-function _runFetch_recorderReceive(dbSheet, idxRowNew, receive, contentShowMethod) {
-  let statusCode, readContentType, readContent;
-  let receive_headers, headers, contentType;
-  let newLine = new Array(6);
-  let contentText = receive.getContentText();
-  let contentLength = contentText.length; // == +(receive.getHeaders()['Content-Length'])
+function FetchReceive(receive, contentShowMethod) {
   this.info = receive;
-  statusCode = this.statusCode = receive.getResponseCode();
+  this.statusCode = receive.getResponseCode();
 
-  receive_headers = receive.getHeaders();
+  let receive_headers = receive.getHeaders();
   if (receive_headers) {
-    headers = receive_headers;
-    contentType = receive_headers['Content-Type'] || '';
+    this.headers = receive_headers;
+    this.contentType = receive_headers['Content-Type'] || '';
   } else {
-    headers = contentType = '';
+    this.headers = this.contentType = '';
   }
-  this.headers = headers;
-  this.contentType = contentType;
-  this.contentLength = contentLength;
+
+  let contentText = receive.getContentText();
+  // == +(receive.getHeaders()['Content-Length'])
+  this.contentLength = contentText.length;
+
+  let readContentType;
+  // this.content 需等同 readContent 屬於 `String` 類型
   switch (contentShowMethod) {
     case 'Text':
       readContentType = contentShowMethod;
-      readContent = contentText;
+      this.content = contentText;
       break;
     case 'Blob':
       readContentType = contentShowMethod;
-      readContent = JSON.stringify(receive.getContent());
+      this.content = JSON.stringify(receive.getContent());
       break;
     case 'NotShow':
     default:
       readContentType = 'NotShow';
-      readContent = '';
+      this.content = '';
   }
-  this.content = readContent;
-
-  newLine[0] = statusCode;
-  newLine[1] = JSON.stringify(headers);
-  newLine[2] = contentType;
-  newLine[3] = contentLength;
-  newLine[4] = readContentType;
-  newLine[5] = readContent;
-
-  dbSheet.updateRange([idxRowNew, 19, 1, 6], [newLine]);
 }
 
 /**
@@ -336,9 +297,9 @@ function _runFetch_recorderReceive(dbSheet, idxRowNew, receive, contentShowMetho
  * @return {Function}
  */
 GasWebRecorder.prototype.receiver = function (actItem, run) {
-  let sheetName = this._sheetName;
+  let sheetId = this._sheetId;
   return function (request) {
-    return _runReceiver(sheetName, actItem, request, run);
+    return _runBase('WebApp', sheetId, actItem, request, run);
   };
 };
 
@@ -352,9 +313,9 @@ GasWebRecorder.prototype.receiver = function (actItem, run) {
  * @return {Function}
  */
 GasWebRecorder.prototype.trigger = function (actItem, run) {
-  let sheetName = this._sheetName;
+  let sheetId = this._sheetId;
   return function () {
-    _runTrigger(sheetName, actItem, run);
+    return _runBase('Trigger', sheetId, actItem, undefined, run);
   };
 };
 
@@ -379,7 +340,7 @@ GasWebRecorder.prototype.trigger = function (actItem, run) {
  *   {String} content }
  *
  * @example
- * let webRecorder = new GasWebRecorder('sheetName');
+ * let webRecorder = new GasWebRecorder(<sheetId>);
  * let url = 'https://example.com';
  * let options = null;
  * let fhrData = new gasFetch(
@@ -392,7 +353,7 @@ GasWebRecorder.prototype.fetch = function (
   requestContentShowMethod, receiveContentShowMethod
 ) {
   return _runFetch(
-    this._sheetName, actItem, url, options,
+    this._sheetId, actItem, url, options,
     requestContentShowMethod, receiveContentShowMethod
   );
 };

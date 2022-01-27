@@ -1,17 +1,8 @@
-import {juruo} from './juruo.js';
+
 import {
   getNewDbKey, findRowIndexByDbKey,
   isErrorValue,
 } from './GasdbSuppor.js';
-
-
-juruo.set({
-  _assistant_notExistSheet: 'The "{spreadsheet}" spreadsheet is not exist.',
-  _assistant_notExistSheetTable:
-    'The "{table}" table of "{spreadsheet}" spreadsheet is not exist.',
-  _assistant_notSpreadsheetConfigType:
-    'The "{config}" spreadsheet config is not of `{id: "...", tables: {...}}` type.',
-});
 
 
 /**
@@ -22,8 +13,8 @@ juruo.set({
  *
  * @memberof module:assistant.
  * @class Gasdb
- * @param {String} sheetName - 試算表名稱（依設定文件）。
- * @param {String} tableName - 表格名稱（依設定文件）。
+ * @param {String} sheetId - 試算表識別碼。
+ * @param {String} tableName - 表格名稱。
  * @throws {Error} "Gasdb" 的用法不符預期。
  * @throws {Error} "{spreadsheet}" 試算表不存在。
  * @throws {Error} "{spreadsheet}" 試算表的 "{table}" 表不存在。
@@ -33,51 +24,27 @@ juruo.set({
  * @example
  * let dbSheet = new Gasdb('spreadsheetName', 'tableName');
  */
-export default function Gasdb(sheetName, tableName) {
+export default function Gasdb(sheetId, tableName) {
   let lenArgs = arguments.length;
 
-  if (lenArgs !== 2) {
-    throw Error(juruo.get('__inconsistentExpectation', {name: 'Gasdb'}));
-  }
-
-  let sheet, table, sheetConfig;
+  let sheet, table;
   let cache = Gasdb._cache;
-  let sheetConfigs = Gasdb._spreadsheetConfigs;
-  let sheetKeyOfCache = 'sheet_' + sheetName;
-  let tableKeyOfCache = 'table_' + sheetName + '_' + tableName;
+  let sheetKeyOfCache = 'sheet_' + sheetId;
+  let tableKeyOfCache = 'table_' + sheetId + '_' + tableName;
 
   if (cache.hasOwnProperty(tableKeyOfCache)) {
     sheet = cache[sheetKeyOfCache];
     table = cache[tableKeyOfCache];
   } else {
-    if (sheetConfigs.hasOwnProperty(sheetName)) {
-      sheetConfig = sheetConfigs[sheetName];
-
-      if (cache.hasOwnProperty(sheetKeyOfCache)) {
-        sheet = cache[sheetKeyOfCache];
-      } else {
-        // 如果資料不正確會拋出錯誤
-        sheet = cache[sheetKeyOfCache]
-          = SpreadsheetApp.openById(sheetConfig.id);
-      }
+    if (cache.hasOwnProperty(sheetKeyOfCache)) {
+      sheet = cache[sheetKeyOfCache];
     } else {
-      throw Error(
-        juruo.get('_assistant_notExistSheet', {spreadsheet: sheetName})
-      );
-    }
-
-    if (sheetConfig.tables.hasOwnProperty(tableName)) {
       // 如果資料不正確會拋出錯誤
-      table = cache[tableKeyOfCache]
-        = sheet.getSheetByName(sheetConfig.tables[tableName]);
-    } else {
-      throw Error(
-        juruo.get('_assistant_notExistSheetTable', {
-          spreadsheet: sheetName,
-          table: tableName,
-        })
-      );
+      sheet = cache[sheetKeyOfCache] = SpreadsheetApp.openById(sheetId);
     }
+
+    // 如果資料不正確會拋出錯誤
+    table = cache[tableKeyOfCache] = sheet.getSheetByName(tableName);
   }
 
   // 谷歌試算表物件
@@ -92,40 +59,36 @@ export default function Gasdb(sheetName, tableName) {
 }
 
 Gasdb._cache = {};
-Gasdb._spreadsheetConfigs = {};
 
 Gasdb.getNewDbKey = getNewDbKey;
 Gasdb.findRowIndexByDbKey = findRowIndexByDbKey;
 Gasdb.isErrorValue = isErrorValue;
 
 /**
- * 設定 Gasdb 試算表列表。
+ * 取得指定範圍。
+ * <br><br>
+ * 座標起始值為 1，若輸入 0 會拋出 "座標或面積範圍無效" 的錯誤。
  *
- * @memberof module:assistant.Gasdb.
- * @func setSheetConfig
- * @param {Gasdb} sheetConfigs - 試算表設定列表。
- * @throws {Error} "{config}" 試算表設定資訊不是 `{id: "...", tables: {...}}` 的預期類型。
- *
- * @example
- * Gasdb.setSheetConfig({
- *   sheetName: {id: '...', tables: {...}},
- *   ...
- * });
+ * @memberof module:assistant.Gasdb#
+ * @func getRange
+ * @param {Array} range - 範圍描述。
+ * @param {Number} range.0 - 橫列引索。
+ * @param {Number} range.1 - 直行引索。
+ * @param {Number} [range.2] - 橫列位置向下取多少列。
+ * @param {Number} [range.3] - 直行位置向右取多少行。
+ * @throws {Error} "Gasdb#getRange" 的用法不符預期。
+ * @return {spreadsheet.Range}
  */
-Gasdb.setSheetConfig = function (sheetConfigs) {
-  let sheetName, config, id, tables;
-  for (sheetName in sheetConfigs) {
-    config = sheetConfigs[sheetName];
-    id = config['id'];
-    tables = config['tables'];
-
-    if (typeof id !== 'string' || (tables != null && typeof tables !== 'object')) {
+Gasdb.prototype.getRange = function (range) {
+  switch (range.length) {
+    case 2:
+      return this.table.getRange(range[0], range[1]);
+    case 4:
+      return this.table.getRange(range[0], range[1], range[2], range[3]);
+    default:
       throw Error(
-        juruo.get('_assistant_notSpreadsheetConfigType', {config: sheetName})
+        juruo.get('__inconsistentExpectation', {name: 'Gasdb#getRange'})
       );
-    }
-
-    Gasdb._spreadsheetConfigs[sheetName] = {id, tables};
   }
 };
 
@@ -134,12 +97,15 @@ Gasdb.setSheetConfig = function (sheetConfigs) {
  *
  * @memberof module:assistant.Gasdb#
  * @func create
- * @param {Array} value - 數組化表格（單行）。
+ * @param {Array} values - 數組化表格。
+ * @return {Number} 引索值。
  */
-Gasdb.prototype.create = function (value) {
+Gasdb.prototype.create = function (values) {
+  let idxRowNew = this.rowNew();
   // 時間文字會被轉成時間格式
   // this.table.appendRow(value);
-  this.update([this.RowNew(), 1], [value]);
+  this.update([idxRowNew, values.length], values);
+  return idxRowNew;
 };
 
 /**
@@ -150,51 +116,30 @@ Gasdb.prototype.create = function (value) {
  * @param {Array} range - 範圍描述。
  * @param {Number} range.0 - 橫列引索。
  * @param {Number} range.1 - 橫列位置向下取多少列。
+ * @param {Number} [range.2] - 橫列位置向下取多少列。
+ * @param {Number} [range.3] - 直行位置向右取多少行。
  * @return {Array} 數組化表格。
  */
 Gasdb.prototype.read = function (range) {
-  return this.table
-    .getRange(
-      range[0], 1,
-      range[1], this.ColumnMax()
-    )
-    .getValues()
-  ;
+  let _range = range.length !== 2 ? range : [
+    range[0], 1,
+    range[1], this.columnMax(),
+  ];
+  return this.getRange(_range).getValues();
 };
 
 /**
- * 讀取指定範圍。
+ * 讀取單格。
  *
  * @memberof module:assistant.Gasdb#
- * @func readRange
+ * @func readSingle
  * @param {Array} range - 範圍描述。
  * @param {Number} range.0 - 橫列引索。
- * @param {Number} range.1 - 直行引索。
- * @param {Number} [range.2] - 橫列位置向下取多少列。
- * @param {Number} [range.3] - 直行位置向右取多少行。
- * @throws {Error} "Gasdb#readRange" 的用法不符預期。
- * @return {*} 該格物件或數組化表格。
+ * @param {Number} range.1 - 橫列位置向下取多少列。
+ * @return {*} 該格物件。
  */
-Gasdb.prototype.readRange = function (range) {
-  switch (range.length) {
-    case 2:
-      return this.table
-        .getRange(range[0], range[1])
-        .getValue()
-      ;
-    case 4:
-      return this.table
-        .getRange(
-          range[0], range[1],
-          range[2], range[3]
-        )
-        .getValues()
-      ;
-    default:
-      throw Error(
-        juruo.get('__inconsistentExpectation', {name: 'Gasdb#readRange'})
-      );
-  }
+Gasdb.prototype.readSingle = function (range) {
+  return this.getRange(range).getValue();
 };
 
 /**
@@ -205,52 +150,30 @@ Gasdb.prototype.readRange = function (range) {
  * @param {Array} range - 範圍描述。
  * @param {Number} range.0 - 橫列引索。
  * @param {Number} range.1 - 橫列位置向下取多少列。
+ * @param {Number} [range.2] - 橫列位置向下取多少列。
+ * @param {Number} [range.3] - 直行位置向右取多少行。
  * @param {Array} values - 數組化表格。
  */
 Gasdb.prototype.update = function (range, values) {
-  this.table
-    .getRange(
-      range[0], 1,
-      range[1], this.ColumnMax()
-    )
-    .setValues(values)
-  ;
+  let _range = range.length !== 2 ? range : [
+    range[0], 1,
+    range[1], this.columnMax(),
+  ];
+  this.getRange(_range).setValues(values);
 };
 
 /**
- * 更新指定範圍。
+ * 讀取單格。
  *
  * @memberof module:assistant.Gasdb#
- * @func updateRange
+ * @func readSingle
  * @param {Array} range - 範圍描述。
  * @param {Number} range.0 - 橫列引索。
- * @param {Number} range.1 - 直行引索。
- * @param {Number} [range.2] - 橫列位置向下取多少列。
- * @param {Number} [range.3] - 直行位置向右取多少行。
- * @param {*} value - 該格物件或數組化表格。
- * @throws {Error} "Gasdb#updateRange" 的用法不符預期。
- * @return {*} 該格物件或數組化表格。
+ * @param {Number} range.1 - 橫列位置向下取多少列。
+ * @param {*} value - 該格物件。
  */
-Gasdb.prototype.updateRange = function (range, value) {
-  switch (range.length) {
-    case 2:
-      return this.table
-        .getRange(range[0], range[1])
-        .setValue(value)
-      ;
-    case 4:
-      return this.table
-        .getRange(
-          range[0], range[1],
-          range[2], range[3]
-        )
-        .setValues(value)
-      ;
-    default:
-      throw Error(
-        juruo.get('__inconsistentExpectation', {name: 'Gasdb#updateRange'})
-      );
-  }
+Gasdb.prototype.updateSingle = function (range, value) {
+  this.getRange(range).setValue(value);
 };
 
 /**
@@ -277,11 +200,11 @@ Gasdb.prototype.remove = function (rowIdx, isRight) {
  *
  * @memberof module:assistant.Gasdb#
  * @func fill
- * @param {Array} values - 數組化表格。
+ * @param {Array} values - 單行數組化表格。
  * @param {Number} [columnAmount] - 需填充的直行數量。
  */
 Gasdb.prototype.fill = function (values, columnAmount) {
-  let _columnAmount = columnAmount > 0 ? columnAmount : this.ColumnMax();
+  let _columnAmount = columnAmount > 0 ? columnAmount : this.columnMax();
 
   let newValues = [];
   let idx = 0;
@@ -301,15 +224,15 @@ Gasdb.prototype.fill = function (values, columnAmount) {
  *
  * @memberof module:assistant.Gasdb#
  * @func fillRows
- * @param {Array} rows - 數組化表格。
+ * @param {Array} values - 數組化表格。
  * @param {Number} [columnAmount] - 需填充的直行數量。
  */
-Gasdb.prototype.fillRows = function (rows, columnAmount) {
-  let _columnAmount = columnAmount > 0 ? columnAmount : this.ColumnMax();
+Gasdb.prototype.fillRows = function (values, columnAmount) {
+  let _columnAmount = columnAmount > 0 ? columnAmount : this.columnMax();
 
   let newRows = [];
-  for (let rowIdx = 0, rowLen = rows.length; rowIdx < rowLen; rowIdx++) {
-    newRows.push(this.fill(rows[rowIdx], _columnAmount));
+  for (let rowIdx = 0, rowLen = values.length; rowIdx < rowLen; rowIdx++) {
+    newRows.push(this.fill(values[rowIdx], _columnAmount));
   }
   return newRows;
 };
@@ -318,9 +241,9 @@ Gasdb.prototype.fillRows = function (rows, columnAmount) {
  * 橫列最後一筆引索值。
  *
  * @memberof module:assistant.Gasdb#
- * @func RowLast
+ * @func rowLast
  */
-Gasdb.prototype.RowLast = function () {
+Gasdb.prototype.rowLast = function () {
   return this.table.getLastRow();
 };
 
@@ -328,9 +251,9 @@ Gasdb.prototype.RowLast = function () {
  * 表格最新一列引索值。
  *
  * @memberof module:assistant.Gasdb#
- * @func RowNew
+ * @func rowNew
  */
-Gasdb.prototype.RowNew = function () {
+Gasdb.prototype.rowNew = function () {
   return this.table.getLastRow() + 1;
 };
 
@@ -338,9 +261,9 @@ Gasdb.prototype.RowNew = function () {
  * 表格最後一列引索值。
  *
  * @memberof module:assistant.Gasdb#
- * @func RowMax
+ * @func rowMax
  */
-Gasdb.prototype.RowMax = function () {
+Gasdb.prototype.rowMax = function () {
   return this.table.getMaxRows();
 };
 
@@ -348,9 +271,9 @@ Gasdb.prototype.RowMax = function () {
  * 直行最後一筆引索值。
  *
  * @memberof module:assistant.Gasdb#
- * @func ColumnLast
+ * @func columnLast
  */
-Gasdb.prototype.ColumnLast = function () {
+Gasdb.prototype.columnLast = function () {
   return this.table.getLastColumn();
 };
 
@@ -358,9 +281,9 @@ Gasdb.prototype.ColumnLast = function () {
  * 表格最新一行引索值。
  *
  * @memberof module:assistant.Gasdb#
- * @func ColumnNew
+ * @func columnNew
  */
-Gasdb.prototype.ColumnNew = function () {
+Gasdb.prototype.columnNew = function () {
   return this.table.getLastColumn() + 1;
 };
 
@@ -368,11 +291,12 @@ Gasdb.prototype.ColumnNew = function () {
  * 表格最後一行引索值。
  *
  * @memberof module:assistant.Gasdb#
- * @func ColumnMax
+ * @func columnMax
  */
-Gasdb.prototype.ColumnMax = function () {
+Gasdb.prototype.columnMax = function () {
   return this.table.getMaxColumns();
 };
+
 
 /**
  * 取得該行網址。
