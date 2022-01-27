@@ -1,12 +1,47 @@
 'use strict';
 
 
+const _conf = {
+  "spreadsheet": {
+    "webRecorder": {
+      "id": "1Yz2fwmap_znUG5Dm9c_iEfxbq-v188lXmm9HCvurUuc",
+      // "tables": {
+      //   "track": "Track",
+      //   "error": "Error",
+      // },
+    },
+    "test": {
+      "id": "1Yz2fwmap_znUG5Dm9c_iEfxbq-v188lXmm9HCvurUuc",
+      // "tables": {
+      //   "gasdb": "Gasdb",
+      // },
+    },
+  },
+  "telegram": {
+    "bot": {
+      "_": null,
+    },
+    "chat": {
+      "bwaycer": "281634169",
+      // chat_id: '-194592154', //普群識別碼 留存
+      // chat_id: '-1001325775761',
+    },
+  },
+};
+const _spreadsheet = _conf.spreadsheet;
+
+
 function v8Test() {
   console.log(Object.assign({}, {a: 1}, {a: 2, b: 2}));
   console.log(Reflect.apply(Math.floor, undefined, [1.75]));
 }
 
 function pureTest() {
+  const {
+    juruoReplace,
+  } = assistant;
+
+
   _runTest('/', [
     {
       title: 'juruo 蒟蒻',
@@ -15,83 +50,17 @@ function pureTest() {
           title: '設定與取得語言包',
           its: [
             {
-              title: '取得不存在的語言包會取得 "Unexpected log message." 訊息',
-              fn() {
-                assert.strictEqual(
-                  juruo.get('bway'),
-                  'Unexpected log message.',
-                  '不符合預期。'
-                );
-              },
-            },
-            {
-              title: '普通設定並取得語言包',
-              fn() {
-                juruo.set('bway', 'Im BwayCer.');
-                assert.strictEqual(
-                  juruo.get('bway'),
-                  'Im BwayCer.',
-                  '不符合預期。'
-                );
-              },
-            },
-            {
               title: '參數設定並取得語言包',
               fn() {
-                juruo.set('who', 'Im {name}.');
                 assert.strictEqual(
-                  juruo.get('who', {name: 'BwayCer'}),
+                  juruoReplace('Im {{name}}.', {name: 'BwayCer'}),
                   'Im BwayCer.',
                   '不符合預期。'
                 );
                 assert.strictEqual(
-                  juruo.get('who'),
-                  'Im {name}.',
+                  juruoReplace('Im {{name}}.', {}),
+                  'Im {{name}}.',
                   '不符合預期的無參數時不替換任何文字。'
-                );
-              },
-            },
-          ],
-        },
-      ],
-    },
-    {
-      title: 'timeStamp 時間戳',
-      describes: [
-        {
-          title: '可讀化',
-          its: [
-            {
-              title: '錯誤測試: 非預期的參數',
-              fn() {
-                assert.throws(
-                  () => timeStamp.readable(),
-                  function (err) {
-                    return (
-                      err instanceof TypeError
-                      && !!~err.message.indexOf('The "dt" must be of `Date`.')
-                    );
-                  },
-                  '不符合預期的未帶指定日參數時的錯誤。'
-                );
-
-                assert.strictEqual(
-                  timeStamp.readable(new Date()),
-                  '',
-                  '不符合預期的未帶格式化文字參數時的回傳值。'
-                );
-              },
-            },
-            {
-              title: '取得 "UTC:%Y-%m-%dT%H:%M:%S:%NZ %% %t" 時間格式',
-              fn() {
-                assert.strictEqual(
-                  timeStamp.readable(
-                    new Date('1970-01-02T03:04:05.678Z'),
-                    'UTC:%Y-%m-%dT%H:%M:%S.%NZ %% %t'
-                  ),
-                  '1970-01-02T03:04:05.678Z % 97445678',
-                  '不符合預期。'
                 );
               },
             },
@@ -103,7 +72,11 @@ function pureTest() {
 }
 
 function gasTest() {
-  Gasdb.setSheetConfig(_conf.spreadsheet);
+  const {
+    crypto,
+    Gasdb, GasWebRecorder,
+  } = assistant;
+
 
   let _conf_webRecorder = {
     request: {
@@ -143,7 +116,7 @@ function gasTest() {
         {
           title: 'gasdb.create',
           fn() {
-            let dbSheet = new Gasdb('test', 'gasdb');
+            let dbSheet = new Gasdb(_spreadsheet.test.id, 'gasdb');
             let dbKey = Gasdb.getNewDbKey(dbSheet);
             let newData = [
               dbKey,
@@ -151,9 +124,9 @@ function gasTest() {
               '測 1',
               '測 2',
             ];
-            dbSheet.create(dbSheet.fill(newData));
+            dbSheet.create([dbSheet.fill(newData)]);
 
-            let data = dbSheet.readRange([dbSheet.RowLast(), 1, 1, 4]);
+            let data = dbSheet.read([dbSheet.rowLast(), 1, 1, 4]);
             assert.deepEqual(
               data, [newData],
               '`gasdb.create` 不符合預期。'
@@ -163,9 +136,9 @@ function gasTest() {
         {
           title: 'gasdb.update',
           fn() {
-            let dbSheet = new Gasdb('test', 'gasdb');
+            let dbSheet = new Gasdb(_spreadsheet.test.id, 'gasdb');
             let dbKey = Gasdb.getNewDbKey(dbSheet);
-            let rowNew = dbSheet.RowNew();
+            let rowNew = dbSheet.rowNew();
 
             let data;
             let addData = dbSheet.fillRows([
@@ -197,7 +170,7 @@ function gasTest() {
         {
           title: 'gasWebRecorder.receiver Success',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
             let receiver = webRecorder.receiver(
               'Receiver Success',
               function (request) {
@@ -211,7 +184,7 @@ function gasTest() {
         {
           title: 'gasWebRecorder.receiver Error',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
             let receiver = webRecorder.receiver(
               'Receiver Error',
               function (request) {
@@ -234,7 +207,7 @@ function gasTest() {
         {
           title: 'gasWebRecorder.trigger Success',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
             let action = webRecorder.trigger(
               'Trigger Success',
               function () {
@@ -248,7 +221,7 @@ function gasTest() {
         {
           title: 'gasWebRecorder.trigger Error',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
             let action = webRecorder.trigger(
               'Trigger Error',
               function () {
@@ -271,7 +244,7 @@ function gasTest() {
         {
           title: 'gasWebRecorder.fetch Success',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
             let url = 'https://tool.magiclen.org/ip/';
             let options = null;
             let fhrData = webRecorder.fetch(
@@ -283,7 +256,7 @@ function gasTest() {
         {
           title: 'gasWebRecorder.fetch Image Success',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
             let url = 'http://img1.gamersky.com/image2018/07/20180707_xdj_187_9/image002_S.jpg';
             let options = null;
             let fhrData = webRecorder.fetch(
@@ -298,12 +271,15 @@ function gasTest() {
         {
           title: 'gasWebRecorder.fetch Post Success',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
-            let url = 'https://api.telegram.org/bot373213534:AAEmUiQkoFeqCpfN9dV3r67O3BOqZ03sJh4/sendMessage';
+            let tgBotToken = _conf.telegram.bot._;
+            if (tgBotToken === null) {
+              console.log('skip. (No telegram token)');
+            }
+
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
+            let url = `https://api.telegram.org/bot${tgBotToken}/sendMessage`;
             let postBody = {
-              chat_id: '281634169',
-              // chat_id: '-194592154', //普群識別碼 留存
-              // chat_id: '-1001325775761',
+              chat_id: _conf.telegram.chat.bwaycer,
               parse_mode: 'Markdown',
               text: 'hi',
             };
@@ -321,7 +297,7 @@ function gasTest() {
         {
           title: 'gasWebRecorder.fetch Error',
           fn() {
-            let webRecorder = new GasWebRecorder('webRecorder');
+            let webRecorder = new GasWebRecorder(_spreadsheet.webRecorder.id);
             let url = 'https://httpstat.us/404';
             let options = {muteHttpExceptions: true};
             let fhrData = webRecorder.fetch(
@@ -354,3 +330,4 @@ function _runTest(title, groups) {
     }
   }
 }
+
