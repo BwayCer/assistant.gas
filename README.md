@@ -32,7 +32,7 @@
   * 開發工具
     * [GitHub google/clasp](https://github.com/google/clasp)
       ： 在本地端開發應用程式腳本工具。
-    * [Apps Script 平台](https://script.google.com)
+    * [Apps Script 平台][google_script]
       ： 在谷歌雲端硬碟外， 另一個可查看且只以應用程式腳本的主的網站。
     * [谷歌雲平台 日誌介面](https://console.cloud.google.com)
   * 限制
@@ -41,48 +41,31 @@
 
 
 
-## 打包及推送工具
+## 快速入門
 
 
-工具： [`bin/claspPush.sh`](./bin/claspPush.sh)
+1. 在 [Apps Script 平台][google_script] 建立新專案。
+2. 執行 `clasp clone` 下載專案。
+3. [建議使用 V8 引擎運行腳本](https://developers.google.com/apps-script/guides/v8-runtime)，
+   將 `"runtimeVersion": "V8"` 設定寫入 "appsscript.json" 文件中。
+4. 建議使用 [rollup.js](https://rollupjs.org) 打包工具打包程式碼後再上傳，
+   因為程式不見得依預期的順序執行，
+   選用 rollup.js 而非 webpack 是因為打包後的程式碼更精簡。
+5. 執行 `clasp push` 推送專案，
+   可以搭配 ".claspignore" 文件設定不需被推送的文件。
 
 
-### 使用方式
 
-
-1. 創建推送設定文件：
-
-描述欲上傳的文件，
-其路徑是相對於 "推送設定文件" 的目錄路徑。
-
-**"推送設定文件" 預期與 ".clasp.json" 在同一層目錄下。**
-
-```
-echo "
-./src/gasInit.js
-./src/juruo.js
-./src/supportLite.js
-" > ".claspWrap"
-```
-
-2. 推送命令：
+### 紀錄已知 V8 版本無法使用的功能
 
 
 ```
-# 正式： 打包 + 推送
-# 備註： 使用 Google Closure Compiler 執行「僅刪除註釋和空格」的打包方式。
-#        不使用更優化的壓縮方式是考慮到發生錯誤時除錯的困難度。
-./bin/claspPush.sh ./path/to/.claspWrap
-
-# 測試： 推送
-# 備註： 若 .clasp.json、appsscript.json
-#        兩文件不存在時會建立預設的內容。
-#        * .clasp.json 的預設內容指向作者的谷歌雲端硬碟，建議更改。
-./bin/claspPush.sh --test-env ./path/to/.claspWrap
+import, export
 ```
 
 
 
 
-[google_drive]: https://drive.google.com/
+[google_drive]: https://drive.google.com
+[google_script]: https://script.google.com
 
