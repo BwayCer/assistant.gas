@@ -4,7 +4,7 @@
 
 > 授權： [CC-BY-4.0](https://choosealicense.com/licenses/cc-by-4.0/)
 
-> 版本： v3.1.0
+> 版本： v5.0.0
 
 
 谷歌應用程式腳本常用工具集合。
