@@ -115,8 +115,8 @@ Gasdb.prototype.create = function (values) {
  * @func read
  * @param {Array} range - 範圍描述。
  * @param {Number} range.0 - 橫列引索。
- * @param {Number} range.1 - 橫列位置向下取多少列。
- * @param {Number} [range.2] - 橫列位置向下取多少列。
+ * @param {Number} [range.1] - 直行引索。
+ * @param {Number} range.2 - 橫列位置向下取多少列。
  * @param {Number} [range.3] - 直行位置向右取多少行。
  * @return {Array} 數組化表格。
  */
@@ -135,7 +135,7 @@ Gasdb.prototype.read = function (range) {
  * @func readSingle
  * @param {Array} range - 範圍描述。
  * @param {Number} range.0 - 橫列引索。
- * @param {Number} range.1 - 橫列位置向下取多少列。
+ * @param {Number} range.1 - 直行引索。
  * @return {*} 該格物件。
  */
 Gasdb.prototype.readSingle = function (range) {
@@ -149,8 +149,8 @@ Gasdb.prototype.readSingle = function (range) {
  * @func update
  * @param {Array} range - 範圍描述。
  * @param {Number} range.0 - 橫列引索。
- * @param {Number} range.1 - 橫列位置向下取多少列。
- * @param {Number} [range.2] - 橫列位置向下取多少列。
+ * @param {Number} [range.1] - 直行引索。
+ * @param {Number} range.2 - 橫列位置向下取多少列。
  * @param {Number} [range.3] - 直行位置向右取多少行。
  * @param {Array} values - 數組化表格。
  */
@@ -169,7 +169,7 @@ Gasdb.prototype.update = function (range, values) {
  * @func readSingle
  * @param {Array} range - 範圍描述。
  * @param {Number} range.0 - 橫列引索。
- * @param {Number} range.1 - 橫列位置向下取多少列。
+ * @param {Number} range.1 - 直行引索。
  * @param {*} value - 該格物件。
  */
 Gasdb.prototype.updateSingle = function (range, value) {
