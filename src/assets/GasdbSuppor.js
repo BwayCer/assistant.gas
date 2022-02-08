@@ -16,7 +16,7 @@ export function getNewDbKey(dbSheet) {
   if (idxRowLast === 0) {
     dbKey = 1;
   } else {
-    let prevDbKey = dbSheet.read([idxRowLast, 1]);
+    let prevDbKey = dbSheet.readSingle([idxRowLast, 1]);
     dbKey = prevDbKey > 0
       ? prevDbKey + 1
       : dbSheet.rowNew()
